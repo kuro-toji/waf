@@ -9,6 +9,27 @@
 //! - Short-circuit evaluation on high-severity matches
 //! - Thread-safe rule updates via RwLock
 //! - O(n*m) complexity where n=rules, m=conditions per rule
+//!
+//! ## Usage
+//!
+//! ```rust
+//! use waf_engine::{RuleMatcher, RuleLoader};
+//! use waf_common::{Severity, Rule, Action};
+//!
+//! // Load rules
+//! let mut loader = RuleLoader::new();
+//! loader.add_file("rules/owasp-top10.yaml");
+//! let rules = loader.load().expect("Failed to load rules");
+//!
+//! // Create matcher with medium severity threshold
+//! let matcher = RuleMatcher::new(rules, Severity::Medium);
+//!
+//! // Evaluate a request
+//! let result = matcher.evaluate(&request_context);
+//! if !result.allowed {
+//!     println!("Request blocked by {} rules", result.matched_rules.len());
+//! }
+//! ```
 
 use waf_common::*;
 use parking_lot::RwLock;
