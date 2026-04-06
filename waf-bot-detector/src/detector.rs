@@ -1,6 +1,28 @@
 //! Bot Detector
 //!
 //! Unified bot detection interface.
+//!
+//! ## Detection Layers
+//!
+//! 1. **Fingerprint Analysis**: User-Agent, headers, TLS fingerprints
+//! 2. **IP Reputation**: Known bots, TOR, VPN, proxy detection
+//! 3. **Behavioral Analysis**: Request patterns, rate anomalies
+//! 4. **Challenges**: JavaScript challenges for suspicious clients
+//!
+//! ## Scoring System
+//!
+//! Bot detection uses a weighted scoring system:
+//! - Score 0-30: Allow (normal traffic)
+//! - Score 30-70: Challenge (suspicious)
+//! - Score 70+: Block (likely bot)
+//!
+//! ## Configuration
+//!
+//! - `challenge_threshold`: Score to trigger challenge
+//! - `block_threshold`: Score to block immediately
+//! - `allow_known_bots`: Allow verified crawlers (Googlebot, etc.)
+//! - `block_tor`: Block known TOR exit nodes
+//! - `block_vpn`: Block known VPN providers
 
 use super::{
     BotAnalysisResult, ChallengeGenerator, ClientFingerprint, FingerprintCollector,
