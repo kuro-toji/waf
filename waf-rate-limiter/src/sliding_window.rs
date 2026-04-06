@@ -23,6 +23,20 @@
 //! - Smooth API rate limiting
 //! - Prevention of request spikes
 //! - Accurate per-second limiting
+//!
+//! ## Usage
+//!
+//! ```rust
+//! use waf_rate_limiter::SlidingWindow;
+//!
+//! let mut window = SlidingWindow::new(100, 60); // 100 reqs per 60 seconds
+//!
+//! if window.check() {
+//!     println!("Request allowed");
+//! } else {
+//!     println!("Rate limited");
+//! }
+//! ```
 
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
