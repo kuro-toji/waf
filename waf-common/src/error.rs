@@ -22,6 +22,16 @@
 //!     Ok(rules)
 //! }
 //! ```
+//!
+//! ## Converting Errors
+//!
+//! Most standard library errors convert automatically:
+//! ```rust
+//! use std::fs::File;
+//! use waf_common::WafError;
+//!
+//! let file = File::open("rules.yaml")?;  // Io error auto-converts
+//! ```
 
 use thiserror::Error;
 
