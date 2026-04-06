@@ -1,6 +1,38 @@
 //! XXE Detector
 //!
 //! Detects XML External Entity injection attacks.
+//!
+//! ## What is XXE?
+//!
+//! XML External Entity (XXE) attacks exploit XML parsers that process
+//! external entities referenced in XML documents. Attackers can:
+//! - Read local files (/etc/passwd)
+//! - Perform SSRF attacks
+//! - Cause denial of service
+//!
+//! ## Detection Patterns
+//!
+//! 1. **DOCTYPE declarations**: `<!DOCTYPE ...>`
+//! 2. **ENTITY declarations**: `<!ENTITY ...>`
+//! 3. **External entity reference**: `SYSTEM "..."`
+//! 4. **PUBLIC external ID**: `PUBLIC "..."`
+//! 5. **File scheme**: `file://...`
+//! 6. **PHP wrappers**: `php://...`, `expect://...`
+//!
+//! ## Confidence Scoring
+//!
+//! - 0.95: PHP wrapper or expect:// URI
+//! - 0.90: External entity with PUBLIC/SYSTEM
+//! - 0.85: ENTITY declaration
+//! - 0.80: File scheme in entity
+//! - 0.70: DOCTYPE declaration in XML content
+//!
+//! ## Use Cases
+//!
+//! - XML API protection
+//! - SOAP service protection
+//! - File read via XXE
+//! - SSRF via XXE
 
 use regex::Regex;
 use waf_common::*;
