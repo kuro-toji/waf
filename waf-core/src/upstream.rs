@@ -1,6 +1,24 @@
 //! Upstream Connection Pool
 //!
 //! Manages connections to upstream servers.
+//!
+//! ## Connection Pooling
+//!
+//! The upstream pool maintains persistent connections to backend servers:
+//! - Reduces connection overhead for each request
+//! - Keeps connections alive for reuse
+//! - Handles connection limits per host
+//!
+//! ## Configuration
+//!
+//! - `max_connections`: Maximum connections per upstream
+//! - `keep_alive_timeout`: Connection timeout in seconds
+//! - `health_check_interval`: How often to check upstream health
+//!
+//! ## Health Checking
+//!
+//! Periodic health checks verify upstream availability.
+//! Unhealthy upstreams are temporarily removed from rotation.
 
 use parking_lot::Mutex;
 use std::collections::HashMap;
