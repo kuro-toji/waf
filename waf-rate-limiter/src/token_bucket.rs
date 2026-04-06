@@ -1,6 +1,27 @@
 //! Token Bucket Rate Limiter
 //!
 //! Token bucket algorithm implementation for rate limiting.
+//!
+//! ## Algorithm Overview
+//!
+//! The token bucket algorithm allows burst traffic up to a maximum
+//! (bucket capacity) while enforcing an average rate (refill rate).
+//!
+//! - Bucket holds tokens, each token allows one request
+//! - Tokens refill at a constant rate (refill_rate per second)
+//! - When a request arrives, it consumes a token if available
+//! - If no tokens available, request is rate limited
+//!
+//! ## Parameters
+//!
+//! - **capacity**: Maximum tokens in bucket (burst size)
+//! - **refill_rate**: Tokens added per second (average rate)
+//!
+//! ## Use Cases
+//!
+//! - API rate limiting with burst allowance
+//! - Per-user limiting with burst tolerance
+//! - Smooth long-term rate with burst flexibility
 
 use std::time::{Duration, Instant};
 use waf_common::*;
