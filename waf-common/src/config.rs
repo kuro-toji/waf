@@ -1,6 +1,30 @@
 //! WAF Configuration
 //!
 //! Configuration structures for the WAF system.
+//!
+//! ## Configuration File
+//!
+//! WAF is configured via YAML files. The main config file contains:
+//! - General settings (listen address, upstream)
+//! - Rate limiting configuration
+//! - Bot detection settings
+//! - Logging preferences
+//! - Metrics configuration
+//!
+//! ## Example Configuration
+//!
+//! ```yaml
+//! waf:
+//!   listen_addr: "0.0.0.0:8080"
+//!   upstream_addr: "127.0.0.1:8000"
+//!   trusted_proxies:
+//!     - "10.0.0.0/8"
+//!
+//! rate_limiter:
+//!   enabled: true
+//!   default_limit: 1000
+//!   default_window_seconds: 60
+//! ```
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
