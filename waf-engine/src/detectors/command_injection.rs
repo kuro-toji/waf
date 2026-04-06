@@ -31,6 +31,18 @@
 //! - RCE (Remote Code Execution) vulnerabilities
 //! - Shell injection through web inputs
 //! - Command chaining for multi-step attacks
+//!
+//! ## Usage
+//!
+//! ```rust
+//! use waf_engine::detectors::CommandInjectionDetector;
+//!
+//! let detector = CommandInjectionDetector::new();
+//! let result = detector.detect("|nc -e /bin/bash 127.1 4444");
+//! if result.detected {
+//!     println!("Command injection: {}", result.pattern);
+//! }
+//! ```
 
 use regex::Regex;
 use waf_common::*;
