@@ -1,6 +1,24 @@
 //! Request Context Builder
 //!
 //! Builds request context from HTTP requests.
+//!
+//! ## Context Building Process
+//!
+//! 1. Extract method, URI, and query string
+//! 2. Convert headers to key-value pairs
+//! 3. Extract client IP (considering X-Forwarded-For)
+//! 4. Decode request body if present
+//! 5. Determine content type
+//! 6. Capture TLS info if applicable
+//!
+//! ## Client IP Extraction
+//!
+//! Client IP is determined by checking in order:
+//! 1. `X-Forwarded-For` header (if from trusted proxy)
+//! 2. `X-Real-IP` header
+//! 3. Direct connection remote address
+//!
+//! Only proxies in `trusted_proxies` list can set X-Forwarded-For.
 
 use http::{Request, Version};
 use std::net::SocketAddr;
