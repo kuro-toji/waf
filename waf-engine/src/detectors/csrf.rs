@@ -28,6 +28,19 @@
 //!
 //! CSRF tokens provide stronger protection but require application changes.
 //! Header-based detection is a WAF-layer solution that works without app changes.
+//!
+//! ## Usage
+//!
+//! ```rust
+//! use waf_engine::detectors::CsrfDetector;
+//!
+//! let trusted = vec!["https://yourdomain.local".to_string()];
+//! let detector = CsrfDetector::new(trusted);
+//! let result = detector.detect(&request_context);
+//! if result.detected {
+//!     println!("CSRF detected: {}", result.reason);
+//! }
+//! ```
 
 use waf_common::*;
 
