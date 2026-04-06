@@ -24,6 +24,18 @@
 //! Many PHP applications are vulnerable to null byte truncation:
 //! `file.php%00.jpg` gets interpreted as `file.php\x00`
 //! allowing execution of PHP files outside allowed paths.
+//!
+//! ## Usage
+//!
+//! ```rust
+//! use waf_engine::detectors::LfiDetector;
+//!
+//! let detector = LfiDetector::new();
+//! let result = detector.detect("file=../../etc/passwd");
+//! if result.detected {
+//!     println!("LFI detected: {}", result.pattern);
+//! }
+//! ```
 
 use regex::Regex;
 use waf_common::*;
