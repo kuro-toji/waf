@@ -19,6 +19,23 @@
 //! 3. Direct connection remote address
 //!
 //! Only proxies in `trusted_proxies` list can set X-Forwarded-For.
+//!
+//! ## Usage
+//!
+//! ```rust
+//! use waf_engine::RequestContextBuilder;
+//! use http::{Request, Body};
+//!
+//! let request = Request::builder()
+//!     .method("POST")
+//!     .uri("/api/users")
+//!     .header("Content-Type", "application/json")
+//!     .body(Body::from(r#"{"name":"test"}"#))
+//!     .unwrap();
+//!
+//! let ctx = RequestContextBuilder::new(request, "192.168.1.1".to_string())
+//!     .build();
+//! ```
 
 use http::{Request, Version};
 use std::net::SocketAddr;
