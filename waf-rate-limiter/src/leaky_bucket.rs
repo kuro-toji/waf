@@ -21,6 +21,20 @@
 //! - Constant rate API limiting
 //! - Traffic shaping for stable output
 //! - Strict rate enforcement without burst
+//!
+//! ## Usage
+//!
+//! ```rust
+//! use waf_rate_limiter::LeakyBucket;
+//!
+//! let mut bucket = LeakyBucket::new(50, 5.0); // capacity 50, leaks 5/sec
+//!
+//! if bucket.try_add() {
+//!     println!("Request allowed");
+//! } else {
+//!     println!("Rate limited");
+//! }
+//! ```
 
 use std::time::{Duration, Instant};
 use waf_common::*;
