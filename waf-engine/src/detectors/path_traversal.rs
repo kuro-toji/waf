@@ -23,6 +23,18 @@
 //! - File inclusion vulnerabilities (LFI)
 //! - Reading sensitive files (/etc/passwd, config files)
 //! - Extension bypass attacks (file.php%00.jpg)
+//!
+//! ## Usage
+//!
+//! ```rust
+//! use waf_engine::detectors::PathTraversalDetector;
+//!
+//! let detector = PathTraversalDetector::new();
+//! let result = detector.detect("../../../etc/passwd");
+//! if result.detected {
+//!     println!("Path traversal: {}", result.pattern);
+//! }
+//! ```
 
 use regex::Regex;
 use waf_common::*;
