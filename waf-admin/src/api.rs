@@ -1,4 +1,27 @@
 //! Admin API Handlers
+//!
+//! REST API handlers for WAF management.
+//!
+//! ## Endpoints
+//!
+//! ### Rules
+//! - `GET /api/rules` - List all rules
+//! - `POST /api/rules` - Create new rule
+//! - `GET /api/rules/:id` - Get specific rule
+//! - `PUT /api/rules/:id` - Update rule
+//! - `DELETE /api/rules/:id` - Delete rule
+//!
+//! ### Statistics
+//! - `GET /api/stats` - Overall statistics
+//! - `GET /api/stats/attacks` - Attack breakdown by type
+//! - `GET /api/stats/traffic` - Traffic metrics
+//!
+//! ### Logs
+//! - `GET /api/logs` - Attack logs with pagination
+//!
+//! ### Configuration
+//! - `GET /api/config` - Get current configuration
+//! - `PUT /api/config` - Update configuration (hot reload)
 
 use axum::{
     extract::{Path, Query, State},
