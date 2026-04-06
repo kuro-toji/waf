@@ -1,6 +1,28 @@
 //! Sliding Window Rate Limiter
 //!
-//! Sliding window algorithm implementation.
+//! Sliding window algorithm implementation for smooth rate limiting.
+//!
+//! ## Algorithm Overview
+//!
+//! The sliding window provides even smoother rate limiting than fixed windows
+//! by considering all requests within the last N seconds, not just the current window.
+//!
+//! - Maintains a queue of request timestamps
+//! - On each request, removes expired timestamps
+//! - Counts remaining requests in the window
+//! - Allows request if count < limit, else rate limits
+//!
+//! ## Advantages Over Fixed Window
+//!
+//! - No burst at window boundaries
+//! - Smoother traffic shaping
+//! - More accurate limiting
+//!
+//! ## Use Cases
+//!
+//! - Smooth API rate limiting
+//! - Prevention of request spikes
+//! - Accurate per-second limiting
 
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
