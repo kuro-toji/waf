@@ -1,6 +1,14 @@
 //! WAF Matcher
 //!
 //! Core rule matching engine.
+//!
+//! ## Performance Characteristics
+//!
+//! - Regex patterns are compiled once at rule load time
+//! - Compiled patterns are cached in memory
+//! - Short-circuit evaluation on high-severity matches
+//! - Thread-safe rule updates via RwLock
+//! - O(n*m) complexity where n=rules, m=conditions per rule
 
 use waf_common::*;
 use parking_lot::RwLock;
