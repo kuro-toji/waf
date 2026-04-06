@@ -1,6 +1,32 @@
 //! XSS Detector
 //!
 //! Detects Cross-Site Scripting attacks using pattern matching and context analysis.
+//!
+//! ## XSS Contexts
+//!
+//! The detector identifies where the XSS payload might execute:
+//! - **Html**: Inside HTML tags
+//! - **Attribute**: Within HTML attribute values
+//! - **Javascript**: Inside `<script>` blocks
+//! - **Css**: Within style properties
+//! - **Url**: In URL parameters
+//!
+//! ## Detection Patterns
+//!
+//! 1. **Script Tags**: Direct `<script>` injection
+//! 2. **Event Handlers**: `onerror`, `onclick`, etc.
+//! 3. **JavaScript URI**: `javascript:` in href/src
+//! 4. **CSS Expression**: `expression()` in IE
+//! 5. **Encoded XSS**: HTML entities, URL encoding
+//! 6. **SVG/XML Based**: `<svg>`, `<xml>` tags
+//!
+//! ## Context-Aware Detection
+//!
+//! Different contexts require different detection strategies:
+//! - `<script>` tags: Detect nested script attempts
+//! - Event handlers: Detect `on*=attack` patterns
+//! - URLs: Detect `javascript:` pseudo-protocol
+//! - CSS: Detect `expression()`, `url(javascript:)`
 
 use regex::Regex;
 use waf_common::*;
