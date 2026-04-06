@@ -1,6 +1,33 @@
 //! CSRF Detector
 //!
 //! Detects Cross-Site Request Forgery attacks using header validation.
+//!
+//! ## What is CSRF?
+//!
+//! CSRF tricks authenticated users into submitting unintended requests.
+//! The browser automatically includes cookies, making the request appear legitimate.
+//!
+//! ## Detection Methods
+//!
+//! 1. **Origin Header Validation**: Check `Origin` header against whitelist
+//! 2. **Referer Header Validation**: Check `Referer` header against whitelist
+//! 3. **Strict Mode**: Require one of these headers on state-changing requests
+//!
+//! ## Header-Based Detection
+//!
+//! - Origin header: Set by browser, more reliable than Referer
+//! - Referer header: May be stripped by privacy extensions
+//! - Both are automatically included in same-origin requests
+//!
+//! ## Configuration
+//!
+//! - `trusted_origins`: List of allowed origins
+//! - `strict_mode`: Require header on POST/PUT/DELETE/PATCH
+//!
+//! ## Limitations
+//!
+//! CSRF tokens provide stronger protection but require application changes.
+//! Header-based detection is a WAF-layer solution that works without app changes.
 
 use waf_common::*;
 
