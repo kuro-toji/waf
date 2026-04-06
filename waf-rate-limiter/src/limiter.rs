@@ -1,6 +1,31 @@
 //! Rate Limiter
 //!
 //! Unified rate limiting interface.
+//!
+//! ## Supported Algorithms
+//!
+//! 1. **Token Bucket**: Allows bursts, smooth long-term rate
+//! 2. **Sliding Window**: Smooth limiting without boundary bursts
+//! 3. **Leaky Bucket**: Constant rate output regardless of input
+//!
+//! ## Backends
+//!
+//! - **In-Memory**: Fast, single-instance only
+//! - **Redis**: Distributed, multi-instance support
+//!
+//! ## Configuration
+//!
+//! ```rust
+//! let config = RateLimitConfig {
+//!     algorithm: RateLimitAlgorithm::SlidingWindow,
+//!     limit: 1000,           // requests per window
+//!     window_seconds: 60,    // window size
+//!     burst_size: Some(100), // for token bucket/leaky bucket
+//! };
+//!
+//! let limiter = RateLimiter::new(config);
+//! let result = limiter.check("192.168.1.1").await?;
+//! ```
 
 use std::collections::HashMap;
 use std::sync::Arc;
