@@ -26,8 +26,10 @@
 //! loader.add_file("rules/custom-rules.yaml");
 //!
 //! let rules = loader.load().expect("Failed to load rules");
+//! ```
 //! let matcher = RuleMatcher::new(rules, Severity::Medium);
 //! ```
+//!
 
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::Path;
