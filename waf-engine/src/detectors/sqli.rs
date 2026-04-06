@@ -1,6 +1,27 @@
 //! SQL Injection Detector
 //!
 //! Detects SQL injection attacks using multiple detection strategies.
+//!
+//! ## Detection Techniques
+//!
+//! 1. **Pattern Match**: Regex-based detection of known SQLi patterns
+//! 2. **Keyword Analysis**: Detects high density of SQL keywords
+//! 3. **Syntax Anomaly**: Detects quote/bracket mismatches
+//! 4. **Time-based Blind**: Detects sleep/benchmark patterns
+//! 5. **Union-based**: Detects UNION SELECT patterns
+//!
+//! ## Confidence Scoring
+//!
+//! Each detection returns a confidence score (0.0-1.0):
+//! - >= 0.9: High confidence, block immediately
+//! - >= 0.7: Medium confidence, consider block
+//! - >= 0.5: Low confidence, log and optionally challenge
+//!
+//! ## False Positive Mitigation
+//!
+//! - Quote anomaly detection may trigger on legitimate SQL in search
+//! - Use severity thresholds to filter low-confidence detections
+//! - Consider application context (e.g., admin interfaces)
 
 use regex::Regex;
 use waf_common::*;
