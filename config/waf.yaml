@@ -1,4 +1,11 @@
-# WAF Configuration
+# Production WAF Configuration
+#
+# For development, use config/waf.yaml (simpler settings)
+# For production, ensure:
+#   - TLS is enabled
+#   - Rate limiting is configured
+#   - Trusted proxies are set correctly
+#   - Logging is configured for audit compliance
 
 waf:
   server_name: "WAF/1.0"
