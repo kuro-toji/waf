@@ -1,0 +1,75 @@
+# Default values for WAF helm chart.
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/username/waf
+  pullPolicy: IfNotPresent
+  tag: latest
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 8080
+  metricsPort: 9090
+  adminPort: 8081
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: waf.yourdomain.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: waf-tls
+      hosts:
+        - waf.yourdomain.local
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false
+
+config:
+  waf:
+    listen_addr: "0.0.0.0:8080"
+    upstream_addr: "backend-service:8000"
+    max_body_size: 1048576
+    trusted_proxies:
+      - "10.0.0.0/8"
+      - "172.16.0.0/12"
+  rate_limiter:
+    enabled: true
+    default_limit: 1000
+    default_window_seconds: 60
+  bot_detector:
+    enabled: true
+    block_tor: true
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

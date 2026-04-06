@@ -1,0 +1,27 @@
+{{- define "waf.configmap" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "waf.fullname" . }}-config
+  labels:
+    {{- include "waf.labels" . | nindent 4 }}
+data:
+  waf.yaml: |
+    {{ .Values.config | toYaml | indent 4 }}
+{{- end }}
+
+{{- define "waf.rules.configmap" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "waf.fullname" . }}-rules
+  labels:
+    {{- include "waf.labels" . | nindent 4 }}
+data:
+  owasp-top10.yaml: |
+    rules: []
+  rate-limits.yaml: |
+    rate_limits: []
+  bot-rules.yaml: |
+    bot_rules: []
+{{- end }}

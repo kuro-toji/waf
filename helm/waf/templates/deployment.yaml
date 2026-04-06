@@ -1,0 +1,48 @@
+{{- define "waf.deployment" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "waf.fullname" . }}
+  labels:
+    {{- include "waf.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "waf.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "waf.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: waf-core
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+            - name: metrics
+              containerPort: {{ .Values.service.metricsPort }}
+              protocol: TCP
+          env:
+            - name: WAF_CONFIG
+              value: /app/config/waf.yaml
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+            - name: rules
+              mountPath: /app/rules
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "waf.fullname" . }}-config
+        - name: rules
+          configMap:
+            name: {{ include "waf.fullname" . }}-rules
+{{- end }}
