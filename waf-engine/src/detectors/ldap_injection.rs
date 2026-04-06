@@ -30,6 +30,18 @@
 //! - 0.80: Attribute manipulation
 //! - 0.75: Hex encoding
 //! - 0.70: Wildcard in filter
+//!
+//! ## Usage
+//!
+//! ```rust
+//! use waf_engine::detectors::LdapInjectionDetector;
+//!
+//! let detector = LdapInjectionDetector::new();
+//! let result = detector.detect("(uid=*)");
+//! if result.detected {
+//!     println!("LDAP injection: {}", result.pattern);
+//! }
+//! ```
 
 use regex::Regex;
 use waf_common::*;
