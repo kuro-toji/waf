@@ -1,6 +1,18 @@
 //! WAF Type Definitions
 //!
 //! Core types for requests, responses, rules, and actions.
+//!
+//! ## Types Overview
+//!
+//! - [`HttpMethod`] - HTTP method enumeration
+//! - [`Severity`] - Attack severity levels (Info, Low, Medium, High, Critical)
+//! - [`Action`] - WAF actions (Allow, Block, Challenge, Log)
+//! - [`MatchType`] - Rule matching strategies
+//! - [`MatchField`] - Request fields that can be matched
+//! - [`Rule`] - Complete WAF rule definition
+//! - [`RequestContext`] - Full request representation
+//! - [`EvaluationResult`] - Rule evaluation outcome
+//! - [`AttackLog`] - Attack logging structure
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
