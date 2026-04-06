@@ -1,0 +1,23 @@
+# Helm chart for WAF
+apiVersion: v2
+name: waf
+description: A Helm chart for WAF - Web Application Firewall
+
+type: application
+
+version: 0.1.0
+
+appVersion: "0.1.0"
+
+keywords:
+  - waf
+  - security
+  - web-application-firewall
+
+maintainers:
+  - name: WAF Contributors
+
+dependencies:
+  - name: redis
+    version: "17.x"
+    condition: redis.enabled
