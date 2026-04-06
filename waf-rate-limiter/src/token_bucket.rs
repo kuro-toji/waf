@@ -22,6 +22,21 @@
 //! - API rate limiting with burst allowance
 //! - Per-user limiting with burst tolerance
 //! - Smooth long-term rate with burst flexibility
+//!
+//! ## Usage
+//!
+//! ```rust
+//! use waf_rate_limiter::TokenBucket;
+//!
+//! let mut bucket = TokenBucket::new(100, 10.0); // 100 tokens, 10/sec refill
+//!
+//! // Try to consume a token
+//! if bucket.try_consume() {
+//!     println!("Request allowed");
+//! } else {
+//!     println!("Rate limited");
+//! }
+//! ```
 
 use std::time::{Duration, Instant};
 use waf_common::*;
