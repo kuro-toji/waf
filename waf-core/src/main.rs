@@ -1,6 +1,21 @@
 //! WAF Core - HTTP Proxy Server
 //!
 //! Main entry point for the WAF proxy server.
+//!
+//! ## Startup Process
+//!
+//! 1. Initialize logging with tracing-subscriber
+//! 2. Load configuration from YAML file
+//! 3. Initialize rule loader and load rules
+//! 4. Initialize rate limiter (in-memory or Redis)
+//! 5. Initialize bot detector
+//! 6. Start metrics server (port 9090)
+//! 7. Start WAF server (port 8080)
+//!
+//! ## Configuration
+//!
+//! Configuration is loaded from `config/waf.yaml` by default.
+//! Override with `WAF_CONFIG` environment variable.
 
 mod server;
 mod pipeline;
