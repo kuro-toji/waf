@@ -23,6 +23,24 @@
 //! - `allow_known_bots`: Allow verified crawlers (Googlebot, etc.)
 //! - `block_tor`: Block known TOR exit nodes
 //! - `block_vpn`: Block known VPN providers
+//!
+//! ## Usage
+//!
+//! ```rust
+//! use waf_bot_detector::{BotDetector, BotDetectorConfig};
+//!
+//! let config = BotDetectorConfig {
+//!     enabled: true,
+//!     challenge_threshold: 30,
+//!     block_threshold: 70,
+//!     allow_known_bots: true,
+//!     block_tor: true,
+//!     ..Default::default()
+//! };
+//!
+//! let detector = BotDetector::new(config);
+//! let result = detector.detect(&request_context);
+//! ```
 
 use super::{
     BotAnalysisResult, ChallengeGenerator, ClientFingerprint, FingerprintCollector,
