@@ -27,6 +27,18 @@
 //! - Event handlers: Detect `on*=attack` patterns
 //! - URLs: Detect `javascript:` pseudo-protocol
 //! - CSS: Detect `expression()`, `url(javascript:)`
+//!
+//! ## Usage
+//!
+//! ```rust
+//! use waf_engine::detectors::XssDetector;
+//!
+//! let detector = XssDetector::new();
+//! let result = detector.detect("<script>alert(1)</script>");
+//! if result.detected {
+//!     println!("XSS detected: {}", result.pattern);
+//! }
+//! ```
 
 use regex::Regex;
 use waf_common::*;
