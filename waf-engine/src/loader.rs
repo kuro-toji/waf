@@ -1,6 +1,33 @@
 //! Rule Loader
 //!
 //! Loads and hot-reloads rules from YAML files.
+//!
+//! ## Hot Reload Behavior
+//!
+//! The loader monitors rule files and automatically reloads when changes are detected:
+//! - File changes are checked every 2 seconds
+//! - On change, all rules are reloaded from disk
+//! - Existing rules are replaced atomically
+//! - In-flight requests complete with old rules
+//! - New requests use updated rules
+//!
+//! ## Error Handling
+//!
+//! If a rule file is malformed:
+//! - Warning is logged
+//! - Other rule files continue to work
+//! - Last valid rules remain active
+//!
+//! ## Usage
+//!
+//! ```rust
+//! let mut loader = RuleLoader::new();
+//! loader.add_file("rules/owasp-top10.yaml");
+//! loader.add_file("rules/custom-rules.yaml");
+//!
+//! let rules = loader.load().expect("Failed to load rules");
+//! let matcher = RuleMatcher::new(rules, Severity::Medium);
+//! ```
 
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::Path;
