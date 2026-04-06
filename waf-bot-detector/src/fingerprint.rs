@@ -1,6 +1,32 @@
 //! Fingerprint Collector
 //!
 //! Collects browser/client fingerprints for bot detection.
+//!
+//! ## Fingerprint Data
+//!
+//! The collector gathers multiple signals:
+//! - **User-Agent**: Browser identification string
+//! - **Accept-Language**: Preferred languages
+//! - **Accept-Encoding**: Supported encodings
+//! - **Accept**: Accepted content types
+//! - **TLS fingerprint**: JA3 hash for TLS client hello
+//! - **HTTP/2 fingerprint**: Settings, window updates
+//!
+//! ## Known Bots
+//!
+//! Recognized bots include:
+//! - Search engines: Googlebot, Bingbot, YandexBot, Baiduspider
+//! - Social crawlers: Twitterbot, Facebook Crawler
+//! - Monitoring: LinkedIn Bot, DuckDuckBot
+//! - Tools: curl, wget, python-requests, axios
+//!
+//! ## Analysis
+//!
+//! Fingerprints are analyzed for:
+//! - Missing headers (bots often skip)
+//! - Short User-Agent strings
+//! - Suspicious patterns (headless, automation tools)
+//! - Known bot identification
 
 use http::header::HeaderMap;
 
