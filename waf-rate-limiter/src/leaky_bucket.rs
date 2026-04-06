@@ -1,6 +1,26 @@
 //! Leaky Bucket Rate Limiter
 //!
-//! Leaky bucket algorithm implementation.
+//! Leaky bucket algorithm implementation for constant-rate limiting.
+//!
+//! ## Algorithm Overview
+//!
+//! The leaky bucket algorithm enforces a constant output rate regardless
+//! of burst input. Think of a bucket with a hole in the bottom.
+//!
+//! - Water (requests) flow into the bucket
+//! - Water leaks out at a constant rate (leak_rate)
+//! - If bucket is full, water (requests) are dropped
+//!
+//! ## Parameters
+//!
+//! - **capacity**: Maximum bucket size (burst capacity)
+//! - **leak_rate**: Requests that leak per second (constant rate)
+//!
+//! ## Use Cases
+//!
+//! - Constant rate API limiting
+//! - Traffic shaping for stable output
+//! - Strict rate enforcement without burst
 
 use std::time::{Duration, Instant};
 use waf_common::*;
