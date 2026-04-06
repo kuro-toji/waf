@@ -1,0 +1,219 @@
+# Bot Detection Rules
+# Rules for identifying and blocking malicious bots
+
+bot_rules:
+  # Known bad User Agents
+  - id: bot-001
+    name: "Known Bad User Agents"
+    description: "Block requests with known malicious user agents"
+    enabled: true
+    conditions:
+      - field: header
+        header_name: "user-agent"
+        match_type: contains
+        value: "masscan"
+        case_insensitive: true
+      - field: header
+        header_name: "user-agent"
+        match_type: contains
+        value: "zgrab"
+        case_insensitive: true
+      - field: header
+        header_name: "user-agent"
+        match_type: contains
+        value: "sqlmap"
+        case_insensitive: true
+      - field: header
+        header_name: "user-agent"
+        match_type: contains
+        value: "nikto"
+        case_insensitive: true
+      - field: header
+        header_name: "user-agent"
+        match_type: contains
+        value: "nmap"
+        case_insensitive: true
+    action:
+      type: block
+      status_code: 403
+      body: "Access denied - malicious user agent"
+      reason: "Known scanning tool detected"
+    tags: ["bot", "scanner"]
+    priority: 100
+
+  # Empty User Agent
+  - id: bot-002
+    name: "Empty User Agent"
+    description: "Block requests with empty user agent"
+    enabled: true
+    conditions:
+      - field: header
+        header_name: "user-agent"
+        match_type: exact
+        value: ""
+        case_insensitive: false
+    action:
+      type: challenge
+      challenge_type: "javascript"
+      timeout: 300
+    tags: ["bot", "missing-header"]
+    priority: 80
+
+  # Missing Accept headers
+  - id: bot-003
+    name: "Missing Accept Headers"
+    description: "Challenge requests with missing browser headers"
+    enabled: true
+    conditions:
+      - field: header
+        header_name: "accept-language"
+        match_type: exact
+        value: ""
+        case_insensitive: false
+    action:
+      type: challenge
+      challenge_type: "javascript"
+      timeout: 300
+    tags: ["bot", "missing-header"]
+    priority: 60
+
+  # Headless browser detection
+  - id: bot-004
+    name: "Headless Browser Detection"
+    description: "Detect headless browsers (Selenium, Puppeteer, etc.)"
+    enabled: true
+    conditions:
+      - field: header
+        header_name: "user-agent"
+        match_type: contains
+        value: "HeadlessChrome"
+        case_insensitive: true
+      - field: header
+        header_name: "user-agent"
+        match_type: contains
+        value: "PhantomJS"
+        case_insensitive: true
+      - field: header
+        header_name: "user-agent"
+        match_type: contains
+        value: " Nightmare"
+        case_insensitive: true
+    action:
+      type: challenge
+      challenge_type: "javascript"
+      timeout: 300
+    tags: ["bot", "headless"]
+    priority: 90
+
+  # Suspicious request patterns
+  - id: bot-005
+    name: "Rapid Requests from Single IP"
+    description: "Detect unusually rapid requests suggesting bot activity"
+    enabled: true
+    conditions:
+      - field: method
+        match_type: exact
+        value: "GET"
+    action:
+      type: log
+      level: "info"
+      message: "Rapid GET requests detected from client"
+    tags: ["bot", "rate-anomaly"]
+    priority: 50
+
+  # Web scraper patterns
+  - id: bot-006
+    name: "Web Scraper Pattern"
+    description: "Detect common web scraping patterns"
+    enabled: true
+    conditions:
+      - field: header
+        header_name: "user-agent"
+        match_type: regex
+        value: "(?i)(scraper|crawler|spider|bot|scrape)"
+        case_insensitive: true
+    action:
+      type: log
+      level: "info"
+      message: "Potential web scraper detected"
+    tags: ["bot", "scraper"]
+    priority: 40
+
+  # Automated tool detection
+  - id: bot-007
+    name: "Automated Tool Detection"
+    description: "Detect automated testing and attack tools"
+    enabled: true
+    conditions:
+      - field: header
+        header_name: "user-agent"
+        match_type: contains
+        value: "python-requests"
+        case_insensitive: true
+      - field: header
+        header_name: "user-agent"
+        match_type: contains
+        value: "curl/"
+        case_insensitive: true
+      - field: header
+        header_name: "user-agent"
+        match_type: contains
+        value: "Go-http-client"
+        case_insensitive: true
+      - field: header
+        header_name: "user-agent"
+        match_type: contains
+        value: "Java/"
+        case_insensitive: true
+    action:
+      type: challenge
+      challenge_type: "javascript"
+      timeout: 300
+    tags: ["bot", "automation"]
+    priority: 70
+
+  # Whitelist legitimate bots
+  - id: bot-whitelist-google
+    name: "Googlebot Allowlist"
+    description: "Allow Googlebot without challenge"
+    enabled: true
+    conditions:
+      - field: header
+        header_name: "user-agent"
+        match_type: contains
+        value: "Googlebot"
+        case_insensitive: true
+    action:
+      type: allow
+    tags: ["bot", "whitelist", "google"]
+    priority: 200
+
+  - id: bot-whitelist-bing
+    name: "Bingbot Allowlist"
+    description: "Allow Bingbot without challenge"
+    enabled: true
+    conditions:
+      - field: header
+        header_name: "user-agent"
+        match_type: contains
+        value: "Bingbot"
+        case_insensitive: true
+    action:
+      type: allow
+    tags: ["bot", "whitelist", "bing"]
+    priority: 200
+
+  - id: bot-whitelist-twitter
+    name: "Twitterbot Allowlist"
+    description: "Allow Twitterbot without challenge"
+    enabled: true
+    conditions:
+      - field: header
+        header_name: "user-agent"
+        match_type: contains
+        value: "Twitterbot"
+        case_insensitive: true
+    action:
+      type: allow
+    tags: ["bot", "whitelist", "twitter"]
+    priority: 200

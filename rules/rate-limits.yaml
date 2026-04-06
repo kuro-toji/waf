@@ -1,0 +1,132 @@
+# Rate Limiting Rules
+# These rules define rate limits for different endpoints and clients
+
+rate_limits:
+  # Default rate limit for all requests
+  - name: "Default Global Limit"
+    description: "Default rate limit applied to all requests"
+    priority: 0
+    scope: "global"
+    limit: 1000
+    window_seconds: 60
+    burst_size: 100
+    action: "block"
+
+  # API endpoints - stricter limits
+  - name: "API Endpoints"
+    description: "Rate limit for API endpoints"
+    priority: 10
+    scope: "path"
+    path_pattern: "/api/*"
+    limit: 100
+    window_seconds: 60
+    burst_size: 20
+    action: "challenge"
+
+  # Login endpoints - very strict
+  - name: "Login Endpoint"
+    description: "Rate limit for login/authentication endpoints"
+    priority: 20
+    scope: "path"
+    path_pattern: "/*/login"
+    limit: 10
+    window_seconds: 300
+    burst_size: 5
+    action: "block"
+
+  - name: "Login Endpoint POST"
+    description: "Rate limit for login POST requests"
+    priority: 25
+    scope: "method_and_path"
+    method: "POST"
+    path_pattern: "/*/login"
+    limit: 5
+    window_seconds: 300
+    burst_size: 3
+    action: "block"
+
+  # Password reset endpoints
+  - name: "Password Reset"
+    description: "Rate limit for password reset requests"
+    priority: 20
+    scope: "path"
+    path_pattern: "/*/password/reset"
+    limit: 3
+    window_seconds: 3600
+    burst_size: 1
+    action: "block"
+
+  # Admin endpoints - strict
+  - name: "Admin Endpoints"
+    description: "Rate limit for admin endpoints"
+    priority: 15
+    scope: "path"
+    path_pattern: "/admin/*"
+    limit: 100
+    window_seconds: 60
+    burst_size: 20
+    action: "challenge"
+
+  # Static assets - very permissive
+  - name: "Static Assets"
+    description: "Higher limits for static content"
+    priority: -10
+    scope: "path"
+    path_pattern: "/*.(css|js|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot)"
+    limit: 5000
+    window_seconds: 60
+    burst_size: 500
+    action: "allow"
+
+  # Health check endpoints
+  - name: "Health Endpoints"
+    description: "No rate limiting for health checks"
+    priority: -20
+    scope: "path"
+    path_pattern: "/health"
+    limit: 10000
+    window_seconds: 60
+    burst_size: 1000
+    action: "allow"
+
+  - name: "Metrics Endpoint"
+    description: "No rate limiting for metrics"
+    priority: -20
+    scope: "path"
+    path_pattern: "/metrics"
+    limit: 10000
+    window_seconds: 60
+    burst_size: 1000
+    action: "allow"
+
+  # Per-IP limits
+  - name: "Per-IP Default"
+    description: "Per-IP rate limiting"
+    priority: 5
+    scope: "ip"
+    limit: 500
+    window_seconds: 60
+    burst_size: 50
+    action: "block"
+
+  # Search endpoints
+  - name: "Search Endpoint"
+    description: "Rate limit for search functionality"
+    priority: 10
+    scope: "path"
+    path_pattern: "/search"
+    limit: 30
+    window_seconds: 60
+    burst_size: 10
+    action: "challenge"
+
+  # File upload endpoints
+  - name: "File Upload"
+    description: "Rate limit for file uploads"
+    priority: 15
+    scope: "path"
+    path_pattern: "/*/upload"
+    limit: 10
+    window_seconds: 300
+    burst_size: 3
+    action: "block"

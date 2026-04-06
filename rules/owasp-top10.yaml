@@ -1,0 +1,438 @@
+# OWASP Top 10 Rule Set
+# Comprehensive protection against OWASP Top 10 vulnerabilities
+
+rules:
+  # SQL Injection Rules
+  - id: sqli-001
+    name: "SQL Injection - UNION SELECT Detection"
+    severity: critical
+    enabled: true
+    description: "Detects UNION SELECT SQL injection attacks"
+    conditions:
+      - field: query
+        match_type: regex
+        value: "(?i)(union.*select|union.*all.*select)"
+        case_insensitive: true
+    action:
+      type: block
+      status_code: 403
+      body: "SQL injection attempt detected"
+      reason: "UNION SELECT injection pattern detected"
+    tags: ["sqli", "owasp", "injection"]
+    priority: 100
+
+  - id: sqli-002
+    name: "SQL Injection - Boolean Based"
+    severity: critical
+    enabled: true
+    description: "Detects boolean-based SQL injection (OR 1=1)"
+    conditions:
+      - field: query
+        match_type: regex
+        value: "(?i)(or\\s+1\\s*=\\s*1|and\\s+1\\s*=\\s*1|\\bor\\b.*=.*)"
+        case_insensitive: true
+      - field: query
+        match_type: regex
+        value: "['\"][^'\"]*['\"][^'\"]*['\"]"
+        case_insensitive: false
+    action:
+      type: block
+      status_code: 403
+      body: "SQL injection attempt detected"
+      reason: "Boolean-based SQL injection pattern detected"
+    tags: ["sqli", "owasp", "tautology"]
+    priority: 95
+
+  - id: sqli-003
+    name: "SQL Injection - Comment Based"
+    severity: high
+    enabled: true
+    description: "Detects SQL comments used in injection attacks"
+    conditions:
+      - field: query
+        match_type: regex
+        value: "(?i)--|\\/\\*|\\*\\/|;--"
+        case_insensitive: true
+    action:
+      type: block
+      status_code: 403
+      body: "SQL injection attempt detected"
+      reason: "SQL comment pattern detected"
+    tags: ["sqli", "owasp"]
+    priority: 80
+
+  - id: sqli-004
+    name: "SQL Injection - Stacked Queries"
+    severity: critical
+    enabled: true
+    description: "Detects stacked query injection attacks"
+    conditions:
+      - field: query
+        match_type: regex
+        value: "(?i);\\s*(drop|delete|insert|update|exec|execute|truncate)"
+        case_insensitive: true
+    action:
+      type: block
+      status_code: 403
+      body: "SQL injection attempt detected"
+      reason: "Stacked query injection pattern detected"
+    tags: ["sqli", "owasp", "stacked-queries"]
+    priority: 100
+
+  - id: sqli-005
+    name: "SQL Injection - Time-based Blind"
+    severity: high
+    enabled: true
+    description: "Detects time-based blind SQL injection"
+    conditions:
+      - field: query
+        match_type: regex
+        value: "(?i)(sleep\\s*\\(|benchmark\\s*\\(|waitfor\\s+delay|pg_sleep)"
+        case_insensitive: true
+    action:
+      type: block
+      status_code: 403
+      body: "SQL injection attempt detected"
+      reason: "Time-based blind SQL injection pattern detected"
+    tags: ["sqli", "owasp", "time-based"]
+    priority: 90
+
+  - id: sqli-006
+    name: "SQL Injection - Information Schema"
+    severity: high
+    enabled: true
+    description: "Detects information schema access attempts"
+    conditions:
+      - field: query
+        match_type: regex
+        value: "(?i)(information_schema|mysql\\.database|pg_catalog|sysobjects|sqlite_master)"
+        case_insensitive: true
+    action:
+      type: block
+      status_code: 403
+      body: "SQL injection attempt detected"
+      reason: "Database system access pattern detected"
+    tags: ["sqli", "owasp", "info-schema"]
+    priority: 85
+
+  # XSS Rules
+  - id: xss-001
+    name: "XSS - Script Tag Injection"
+    severity: critical
+    enabled: true
+    description: "Detects script tag injection attacks"
+    conditions:
+      - field: query
+        match_type: regex
+        value: "(?i)<script[^>]*>.*?</script>"
+        case_insensitive: true
+      - field: body
+        match_type: regex
+        value: "(?i)<script[^>]*>.*?</script>"
+        case_insensitive: true
+    action:
+      type: block
+      status_code: 403
+      body: "Cross-site scripting attempt detected"
+      reason: "Script tag injection detected"
+    tags: ["xss", "owasp", "script-tag"]
+    priority: 100
+
+  - id: xss-002
+    name: "XSS - Event Handler"
+    severity: high
+    enabled: true
+    description: "Detects XSS via event handlers"
+    conditions:
+      - field: query
+        match_type: regex
+        value: "(?i)\\bon\\w+\\s*="
+        case_insensitive: true
+      - field: body
+        match_type: regex
+        value: "(?i)\\bon\\w+\\s*="
+        case_insensitive: true
+    action:
+      type: block
+      status_code: 403
+      body: "Cross-site scripting attempt detected"
+      reason: "Event handler XSS pattern detected"
+    tags: ["xss", "owasp", "event-handler"]
+    priority: 95
+
+  - id: xss-003
+    name: "XSS - JavaScript URI"
+    severity: critical
+    enabled: true
+    description: "Detects javascript: URI XSS attempts"
+    conditions:
+      - field: query
+        match_type: regex
+        value: "(?i)javascript\\s*:"
+        case_insensitive: true
+      - field: body
+        match_type: regex
+        value: "(?i)javascript\\s*:"
+        case_insensitive: true
+    action:
+      type: block
+      status_code: 403
+      body: "Cross-site scripting attempt detected"
+      reason: "JavaScript URI XSS pattern detected"
+    tags: ["xss", "owasp", "javascript-uri"]
+    priority: 100
+
+  - id: xss-004
+    name: "XSS - Encoded Script Tags"
+    severity: high
+    enabled: true
+    description: "Detects encoded script tag injection"
+    conditions:
+      - field: query
+        match_type: regex
+        value: "&#x?[0-9a-f]+;|<.*script"
+        case_insensitive: false
+    action:
+      type: block
+      status_code: 403
+      body: "Cross-site scripting attempt detected"
+      reason: "Encoded XSS pattern detected"
+    tags: ["xss", "owasp", "encoded"]
+    priority: 90
+
+  # Path Traversal Rules
+  - id: path-001
+    name: "Path Traversal - Unix Style"
+    severity: high
+    enabled: true
+    description: "Detects Unix-style path traversal attacks"
+    conditions:
+      - field: uri
+        match_type: regex
+        value: "\\.\\.\\/"
+        case_insensitive: false
+      - field: query
+        match_type: regex
+        value: "\\.\\.\\/"
+        case_insensitive: false
+    action:
+      type: block
+      status_code: 403
+      body: "Path traversal attempt detected"
+      reason: "Unix path traversal pattern detected"
+    tags: ["path-traversal", "owasp", "lfi"]
+    priority: 85
+
+  - id: path-002
+    name: "Path Traversal - Windows Style"
+    severity: high
+    enabled: true
+    description: "Detects Windows-style path traversal attacks"
+    conditions:
+      - field: uri
+        match_type: regex
+        value: "\\.\\.[\\\\/]"
+        case_insensitive: false
+      - field: query
+        match_type: regex
+        value: "\\.\\.[\\\\/]"
+        case_insensitive: false
+    action:
+      type: block
+      status_code: 403
+      body: "Path traversal attempt detected"
+      reason: "Windows path traversal pattern detected"
+    tags: ["path-traversal", "owasp", "lfi", "windows"]
+    priority: 85
+
+  - id: path-003
+    name: "Path Traversal - Encoded"
+    severity: high
+    enabled: true
+    description: "Detects URL-encoded path traversal"
+    conditions:
+      - field: query
+        match_type: regex
+        value: "(?i)%2e%2e"
+        case_insensitive: true
+      - field: uri
+        match_type: regex
+        value: "(?i)%2e%2e"
+        case_insensitive: true
+    action:
+      type: block
+      status_code: 403
+      body: "Path traversal attempt detected"
+      reason: "Encoded path traversal pattern detected"
+    tags: ["path-traversal", "owasp", "encoded"]
+    priority: 80
+
+  # Command Injection Rules
+  - id: cmd-001
+    name: "Command Injection - Pipe Operator"
+    severity: critical
+    enabled: true
+    description: "Detects command injection via pipe operators"
+    conditions:
+      - field: query
+        match_type: regex
+        value: "\\|[^|]"
+        case_insensitive: false
+    action:
+      type: block
+      status_code: 403
+      body: "Command injection attempt detected"
+      reason: "Pipe operator command injection detected"
+    tags: ["command-injection", "owasp", "rce"]
+    priority: 95
+
+  - id: cmd-002
+    name: "Command Injection - Semicolon"
+    severity: high
+    enabled: true
+    description: "Detects command injection via semicolons"
+    conditions:
+      - field: query
+        match_type: regex
+        value: ";\\s*(curl|wget|nc|bash|sh|cmd)"
+        case_insensitive: true
+    action:
+      type: block
+      status_code: 403
+      body: "Command injection attempt detected"
+      reason: "Semicolon command injection pattern detected"
+    tags: ["command-injection", "owasp", "rce"]
+    priority: 90
+
+  - id: cmd-003
+    name: "Command Injection - Substitution"
+    severity: critical
+    enabled: true
+    description: "Detects command substitution attacks"
+    conditions:
+      - field: query
+        match_type: regex
+        value: "\\$[^$]*\\(|`[^`]*`"
+        case_insensitive: false
+    action:
+      type: block
+      status_code: 403
+      body: "Command injection attempt detected"
+      reason: "Command substitution pattern detected"
+    tags: ["command-injection", "owasp", "rce"]
+    priority: 95
+
+  # XXE Rules
+  - id: xxe-001
+    name: "XXE - External Entity"
+    severity: critical
+    enabled: true
+    description: "Detects XML External Entity attacks"
+    conditions:
+      - field: body
+        match_type: regex
+        value: "(?i)<!ENTITY.*SYSTEM"
+        case_insensitive: true
+      - field: body
+        match_type: regex
+        value: "(?i)<!DOCTYPE.*<!ENTITY"
+        case_insensitive: true
+    action:
+      type: block
+      status_code: 403
+      body: "XXE attack detected"
+      reason: "External entity declaration detected"
+    tags: ["xxe", "owasp", "xml-injection"]
+    priority: 100
+
+  # LDAP Injection Rules
+  - id: ldap-001
+    name: "LDAP Injection - Wildcard"
+    severity: high
+    enabled: true
+    description: "Detects LDAP wildcard injection"
+    conditions:
+      - field: query
+        match_type: regex
+        value: "\\*\\([^)]*\\)"
+        case_insensitive: false
+    action:
+      type: block
+      status_code: 403
+      body: "LDAP injection attempt detected"
+      reason: "LDAP wildcard injection pattern detected"
+    tags: ["ldap-injection", "owasp"]
+    priority: 85
+
+  # Security Headers Rules
+  - id: sec-001
+    name: "Security - Missing X-Frame-Options"
+    severity: medium
+    enabled: true
+    description: "Detects requests that may be targeting clickjacking"
+    conditions:
+      - field: uri
+        match_type: regex
+        value: "(?i)(iframe|frame|object|embed)"
+        case_insensitive: true
+    action:
+      type: log
+      level: "info"
+      message: "Potential clickjacking target detected"
+    tags: ["security", "clickjacking"]
+    priority: 50
+
+  # Common Attack Patterns
+  - id: attack-001
+    name: "Attack - Common Exploit Pattern"
+    severity: high
+    enabled: true
+    description: "Detects common exploit patterns"
+    conditions:
+      - field: query
+        match_type: regex
+        value: "(?i)(eval\\(|exec\\(|system\\(|passthru\\(|shell_exec\\()"
+        case_insensitive: true
+    action:
+      type: block
+      status_code: 403
+      body: "Potential remote code execution attempt detected"
+      reason: "Code execution function detected in request"
+    tags: ["rce", "owasp"]
+    priority: 95
+
+  - id: attack-002
+    name: "Attack - File Inclusion"
+    severity: high
+    enabled: true
+    description: "Detects file inclusion attempts"
+    conditions:
+      - field: query
+        match_type: regex
+        value: "(?i)(file://|php://|expect://|data://)"
+        case_insensitive: true
+    action:
+      type: block
+      status_code: 403
+      body: "File inclusion attempt detected"
+      reason: "Protocol wrapper injection detected"
+    tags: ["lfi", "rfi", "owasp"]
+    priority: 90
+
+  - id: attack-003
+    name: "Attack - Null Byte Injection"
+    severity: high
+    enabled: true
+    description: "Detects null byte injection attacks"
+    conditions:
+      - field: query
+        match_type: regex
+        value: "\\x00|%00"
+        case_insensitive: false
+    action:
+      type: block
+      status_code: 403
+      body: "Null byte injection detected"
+      reason: "Null byte injection pattern detected"
+    tags: ["injection", "bypass"]
+    priority: 85

@@ -1,0 +1,52 @@
+# WAF Configuration
+
+waf:
+  server_name: "WAF/1.0"
+  listen_addr: "0.0.0.0:8080"
+  upstream_addr: "127.0.0.1:8000"
+  max_body_size: 1048576
+  timeout_seconds: 60
+  verbose: false
+  trusted_proxies:
+    - "10.0.0.0/8"
+    - "172.16.0.0/12"
+    - "192.168.0.0/16"
+  min_severity_to_block: "medium"
+
+proxy:
+  tls_enabled: false
+  tls_cert_path: null
+  tls_key_path: null
+  keep_alive_timeout: 65
+  max_connections: 256
+  health_check_interval: 30
+
+rate_limiter:
+  enabled: true
+  default_limit: 1000
+  default_window_seconds: 60
+  redis_url: null  # Set to "redis://redis:6379" for distributed rate limiting
+  rules: []
+
+bot_detector:
+  enabled: true
+  js_challenge: true
+  captcha_challenge: false
+  challenge_timeout: 300
+  ip_reputation_check: true
+  allow_search_bots: true
+  block_tor: true
+  block_vpn: false
+
+logging:
+  level: "info"
+  format: "json"
+  log_file: null
+  include_headers: false
+  include_body: false
+
+metrics:
+  enabled: true
+  path: "/metrics"
+  pushgateway_url: null
+  push_interval: 60

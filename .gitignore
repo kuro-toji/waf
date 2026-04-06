@@ -1,0 +1,47 @@
+# Rust
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# Build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+*.app
+
+# Debug
+*.pdb
+*.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Docker
+.dockerignore
+
+# Node (for dashboard)
+node_modules/
+dist/
+.env
+.env.local
+
+# Logs
+*.log
+logs/
+
+# Prometheus
+data/
+
+# Grafana
+grafana/data/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl

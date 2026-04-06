@@ -1,0 +1,35 @@
+[package]
+name = "waf-core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+waf-common = { path = "../waf-common" }
+waf-engine = { path = "../waf-engine" }
+waf-rate-limiter = { path = "../waf-rate-limiter" }
+waf-bot-detector = { path = "../waf-bot-detector" }
+tokio = { workspace = true }
+axum = { workspace = true }
+hyper = { workspace = true }
+http = { workspace = true }
+tower = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+chrono = { workspace = true }
+prometheus = { workspace = true }
+metrics = { workspace = true }
+tower-http = { version = "0.5", features = ["trace", "cors"] }
+hyper-util = { version = "0.1", features = ["tokio", "server"] }
+tokio-native-tls = "0.3"
+rustls = { version = "0.21", features = ["dangerous_configuration"] }
+
+[dev-dependencies]
+tokio-test = "0.4"
+hyper = { version = "1.2", features = ["full"] }
+
+[[bin]]
+name = "waf-core"
+path = "src/main.rs"

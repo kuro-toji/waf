@@ -1,0 +1,23 @@
+[package]
+name = "waf-engine"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+waf-common = { path = "../waf-common" }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+regex = { workspace = true }
+fancy-regex = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+http = { workspace = true }
+notify = "6.1"  # For hot reload
+parking_lot = "0.12"  # For better async mutexes
+
+[dev-dependencies]
+tokio-test = "0.4"
