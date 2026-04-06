@@ -1,6 +1,37 @@
 //! WAF Metrics
 //!
 //! Prometheus metrics for WAF.
+//!
+//! ## Available Metrics
+//!
+//! ### Counters
+//! - `waf_requests_total` - Total requests processed (labeled by status)
+//! - `waf_requests_allowed_total` - Allowed requests
+//! - `waf_requests_blocked_total` - Blocked requests
+//! - `waf_attacks_total` - Attacks detected (labeled by type)
+//! - `waf_rate_limit_exceeded_total` - Rate limit exceeded events
+//! - `waf_bots_detected_total` - Bots detected
+//!
+//! ### Histograms
+//! - `waf_request_latency_seconds` - Request processing latency
+//!
+//! ### Gauges
+//! - `waf_active_connections` - Current active connections
+//!
+//! ## Usage
+//!
+//! ```rust
+//! use waf_core::metrics::{record_request, record_attack, record_latency};
+//!
+//! // Record a request
+//! record_request(true); // allowed
+//!
+//! // Record an attack
+//! record_attack("sqli");
+//!
+//! // Record latency
+//! record_latency(0.005); // 5ms
+//! ```
 
 use prometheus::{
     Counter, Histogram, Gauge, Opts, Registry, TextEncoder,
