@@ -1,6 +1,27 @@
 //! WAF Error Types
 //!
 //! Error handling for the WAF system.
+//!
+//! ## Error Categories
+//!
+//! - **IO Errors**: File system operations, network I/O
+//! - **Config Errors**: Invalid configuration, missing files
+//! - **Rule Errors**: Invalid rule format, regex compilation failures
+//! - **Redis Errors**: Connection failures, command errors
+//! - **Upstream Errors**: Backend server failures
+//! - **Security Errors**: Rate limit exceeded, challenge failed
+//!
+//! ## Error Handling
+//!
+//! Use `?` operator with custom error types:
+//!
+//! ```rust
+//! fn load_rules() -> Result<Vec<Rule>, WafError> {
+//!     let content = std::fs::read_to_string("rules.yaml")?;
+//!     let rules: Vec<Rule> = serde_yaml::from_str(&content)?;
+//!     Ok(rules)
+//! }
+//! ```
 
 use thiserror::Error;
 
