@@ -1,6 +1,25 @@
 //! WAF Admin API Service
 //!
 //! REST API for WAF management.
+//!
+//! ## API Endpoints
+//!
+//! - `GET /api/rules` - List rules
+//! - `POST /api/rules` - Create rule
+//! - `GET /api/rules/:id` - Get rule
+//! - `PUT /api/rules/:id` - Update rule
+//! - `DELETE /api/rules/:id` - Delete rule
+//! - `GET /api/stats` - Get statistics
+//! - `GET /api/stats/attacks` - Attack breakdown
+//! - `GET /api/logs` - Attack logs
+//! - `GET /api/config` - Get configuration
+//! - `PUT /api/config` - Update configuration
+//! - `GET /health` - Health check
+//!
+//! ## CORS
+//!
+//! CORS is enabled for all origins in development.
+//! In production, configure specific allowed origins.
 
 mod api;
 mod state;
