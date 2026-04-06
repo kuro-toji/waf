@@ -25,6 +25,14 @@
 //!   default_limit: 1000
 //!   default_window_seconds: 60
 //! ```
+//!
+//! ## Loading Configuration
+//!
+//! ```rust
+//! use waf_common::WafConfig;
+//!
+//! let config = WafConfig::load_from_file("config/waf.yaml")?;
+//! ```
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
