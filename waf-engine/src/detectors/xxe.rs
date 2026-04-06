@@ -33,6 +33,19 @@
 //! - SOAP service protection
 //! - File read via XXE
 //! - SSRF via XXE
+//!
+//! ## Usage
+//!
+//! ```rust
+//! use waf_engine::detectors::XxeDetector;
+//!
+//! let detector = XxeDetector::new();
+//! let xml = r#"<!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>"#;
+//! let result = detector.detect(xml);
+//! if result.detected {
+//!     println!("XXE detected: {}", result.pattern);
+//! }
+//! ```
 
 use regex::Regex;
 use waf_common::*;
