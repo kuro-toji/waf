@@ -1,6 +1,29 @@
 //! LFI Detector
 //!
 //! Detects Local File Inclusion attacks.
+//!
+//! ## LFI vs Path Traversal
+//!
+//! - Path Traversal: Attempts to access files outside web root
+//! - LFI: Exploits application feature to include local files
+//! Both often use `../` patterns - LFI detector focuses on
+//! common web application file inclusion patterns.
+//!
+//! ## Detection Patterns
+//!
+//! 1. **Directory traversal**: `../` or `..\` patterns
+//! 2. **URL-encoded traversal**: `%2e%2e`
+//! 3. **Null byte injection**: `\x00` for extension bypass
+//! 4. **Common LFI paths**:
+//!    - `/etc/passwd`, `/etc/shadow`
+//!    - `/windows/system32/config/sam`
+//!    - `/proc/self/environ`
+//!
+//! ## Null Byte Truncation
+//!
+//! Many PHP applications are vulnerable to null byte truncation:
+//! `file.php%00.jpg` gets interpreted as `file.php\x00`
+//! allowing execution of PHP files outside allowed paths.
 
 use regex::Regex;
 use waf_common::*;
