@@ -1,6 +1,36 @@
 //! Command Injection Detector
 //!
 //! Detects OS command injection attacks.
+//!
+//! ## Detection Patterns
+//!
+//! 1. **Pipe operator**: `|` for command chaining
+//! 2. **Semicolon**: `;` for command separator
+//! 3. **Backtick substitution**: `` `command` ``
+//! 4. **Shell substitution**: `$(command)`
+//! 5. **Redirection**: `>`, `<`, `&>`
+//! 6. **Logical operators**: `&&`, `||`
+//!
+//! ## Dangerous Commands
+//!
+//! Detects attempts to execute:
+//! - Network tools: `curl`, `wget`, `nc`
+//! - Shells: `bash`, `sh`, `cmd`, `powershell`
+//! - Scripting: `python`, `perl`, `php`
+//!
+//! ## Confidence Scoring
+//!
+//! - 0.95: Command substitution with dangerous command
+//! - 0.85: Backtick or $() with command context
+//! - 0.80: Pipe with command-like context
+//! - 0.70: Semicolon in request parameter
+//! - 0.6: Redirection operators
+//!
+//! ## Use Cases
+//!
+//! - RCE (Remote Code Execution) vulnerabilities
+//! - Shell injection through web inputs
+//! - Command chaining for multi-step attacks
 
 use regex::Regex;
 use waf_common::*;
