@@ -31,6 +31,18 @@
 //! - Never include files based on user input without validation
 //! - Use whitelists for allowed includes
 //! - Disable `allow_url_include` in PHP
+//!
+//! ## Usage
+//!
+//! ```rust
+//! use waf_engine::detectors::RfiDetector;
+//!
+//! let detector = RfiDetector::new();
+//! let result = detector.detect("page=http://malicious.local/shell.txt");
+//! if result.detected {
+//!     println!("RFI detected: {}", result.pattern);
+//! }
+//! ```
 
 use regex::Regex;
 use waf_common::*;
