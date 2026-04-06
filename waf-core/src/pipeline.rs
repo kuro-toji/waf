@@ -1,6 +1,23 @@
 //! Request Pipeline
 //!
 //! Processes incoming requests through WAF components.
+//!
+//! ## Pipeline Stages
+//!
+//! 1. **Context Building**: Extract request info (IP, headers, body)
+//! 2. **Rate Limit Check**: Check rate limits, reject if exceeded
+//! 3. **Bot Detection**: Analyze fingerprint, decide challenge/block
+//! 4. **Rule Evaluation**: Run all rules, collect matches
+//! 5. **Decision**: Allow, block, or challenge based on results
+//! 6. **Logging**: Log attack info if blocked
+//! 7. **Forward**: Forward to upstream if allowed
+//!
+//! ## Error Handling
+//!
+//! - Rate limit exceeded: Return 429 Too Many Requests
+//! - Bot detected: Return 403 with challenge page if configured
+//! - Rule match: Return 403 with block message
+//! - Upstream error: Return 502 Bad Gateway
 
 use axum::{body::Body, extract::Request, response::Response};
 use http::{HeaderMap, StatusCode};
