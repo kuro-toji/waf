@@ -13,6 +13,24 @@
 //! - [`RequestContext`] - Full request representation
 //! - [`EvaluationResult`] - Rule evaluation outcome
 //! - [`AttackLog`] - Attack logging structure
+//!
+//! ## Usage Example
+//!
+//! ```rust
+//! use waf_common::{Rule, HttpMethod, Severity, Action, MatchCondition, MatchType, MatchField};
+//!
+//! let mut rule = Rule::new(
+//!     "SQL Injection Detection".to_string(),
+//!     Severity::Critical,
+//!     Action::Block { status_code: 403, body: "Blocked".to_string(), reason: "SQLi detected".to_string() }
+//! );
+//! rule.add_condition(MatchCondition {
+//!     field: MatchField::Query,
+//!     match_type: MatchType::Regex,
+//!     value: "(?i)union.*select".to_string(),
+//!     case_insensitive: true,
+//! });
+//! ```
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
