@@ -1,5 +1,11 @@
 # OWASP Top 10 Rule Set
 # Comprehensive protection against OWASP Top 10 vulnerabilities
+#
+# Testing these rules:
+#   SQLi: curl "http://localhost:8080/?id=1 UNION SELECT * FROM users"
+#   XSS:  curl "http://localhost:8080/?q=<script>alert(1)</script>"
+#   LFI:  curl "http://localhost:8080/?file=../../etc/passwd"
+#   RCE:  curl "http://localhost:8080/?cmd=|nc -e /bin/bash 127.0.0.1 4444"
 
 rules:
   # SQL Injection Rules
