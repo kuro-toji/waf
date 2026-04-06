@@ -1,6 +1,36 @@
 //! Bot Challenge System
 //!
 //! Generates and validates challenges for suspected bots.
+//!
+//! ## Challenge Types
+//!
+//! 1. **JavaScript Challenge**: Browser must solve proof-of-work puzzle
+//!    - Generates JavaScript that computes a hash
+//!    - Validates the solution on the server
+//!    - Transparent to legitimate users with JS enabled
+//!
+//! 2. **CAPTCHA Challenge**: Visual/audio puzzle
+//!    - Traditional image-based verification
+//!    - Useful for non-browser clients
+//!    - Higher friction than JS challenge
+//!
+//! 3. **Rate Limit Challenge**: Slow down excessive requests
+//!    - Temporary rate limiting as challenge
+//!    - No user interaction required
+//!
+//! ## Challenge Flow
+//!
+//! 1. Request arrives, bot score is intermediate
+//! 2. WAF returns challenge HTML page
+//! 3. Browser executes JavaScript, computes solution
+//! 4. Browser sends solution back to WAF
+//! 5. WAF validates and sets challenge passed cookie
+//! 6. Original request is retried with challenge cookie
+//!
+//! ## Timeout
+//!
+//! Challenges expire after configurable timeout (default 5 minutes).
+//! Expired challenges require re-solving.
 
 use chrono::{DateTime, Duration, Utc};
 use std::collections::HashMap;
