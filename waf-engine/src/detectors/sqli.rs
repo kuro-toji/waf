@@ -22,6 +22,18 @@
 //! - Quote anomaly detection may trigger on legitimate SQL in search
 //! - Use severity thresholds to filter low-confidence detections
 //! - Consider application context (e.g., admin interfaces)
+//!
+//! ## Usage
+//!
+//! ```rust
+//! use waf_engine::detectors::SqlInjectionDetector;
+//!
+//! let detector = SqlInjectionDetector::new();
+//! let result = detector.detect("' OR '1'='1");
+//! if result.detected {
+//!     println!("SQL injection detected: {}", result.pattern);
+//! }
+//! ```
 
 use regex::Regex;
 use waf_common::*;
