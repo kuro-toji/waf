@@ -1,6 +1,33 @@
 //! Redis Backend for Rate Limiting
 //!
 //! Distributed rate limiting using Redis.
+//!
+//! ## Why Redis?
+//!
+//! For multi-instance WAF deployments, rate limiting state must be
+//! shared across all instances. Redis provides:
+//! - Atomic operations for accurate counting
+//! - Low latency (<1ms for local Redis)
+//! - TTL support for automatic cleanup
+//! - Clustering for horizontal scaling
+//!
+//! ## Algorithms Supported
+//!
+//! 1. **Sliding Window**: Sorted set with timestamps
+//! 2. **Token Bucket**: Atomic increment/decrement with Lua scripts
+//!
+//! ## Lua Scripts
+//!
+//! Redis backends use Lua scripts for atomic operations:
+//! - Sliding window: Add timestamp, remove expired, count
+//! - Token bucket: Check tokens, consume if available
+//!
+//! This ensures accurate counting even under high concurrency.
+//!
+//! ## Key Structure
+//!
+//! Keys are prefixed with `waf:ratelimit:` to avoid collisions.
+//! Key format: `waf:ratelimit:{ip}:{endpoint}` for per-IP-per-endpoint.
 
 use redis::{AsyncCommands, Client};
 use std::sync::Arc;
