@@ -1,6 +1,28 @@
 //! Path Traversal Detector
 //!
 //! Detects directory traversal attacks.
+//!
+//! ## Detection Patterns
+//!
+//! 1. **Unix traversal**: `../` patterns in paths
+//! 2. **Windows traversal**: `..\` or `../` with backslash
+//! 3. **URL-encoded**: `%2e%2e` (encoded `..`)
+//! 4. **Double-encoded**: `%252e%252e` (double encoded)
+//! 5. **Null byte**: `\x00` for extension bypass
+//! 6. **Sensitive paths**: Detection of access to sensitive files
+//!
+//! ## Confidence Levels
+//!
+//! - 0.95: Unix/Windows traversal with special chars
+//! - 0.90: URL-encoded traversal
+//! - 0.85: Null byte or sensitive path access
+//! - 0.70: General path traversal attempt
+//!
+//! ## Use Cases
+//!
+//! - File inclusion vulnerabilities (LFI)
+//! - Reading sensitive files (/etc/passwd, config files)
+//! - Extension bypass attacks (file.php%00.jpg)
 
 use regex::Regex;
 use waf_common::*;
