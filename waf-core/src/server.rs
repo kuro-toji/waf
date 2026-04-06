@@ -1,6 +1,24 @@
 //! HTTP Server
 //!
 //! Axum-based HTTP server for WAF.
+//!
+//! ## Request Flow
+//!
+//! 1. Request arrives at WAF core
+//! 2. TLS termination (if enabled)
+//! 3. Bot detection check
+//! 4. Rate limiting check
+//! 5. WAF rule evaluation
+//! 6. Allow/block/challenge decision
+//! 7. Forward to upstream (if allowed)
+//!
+//! ## Endpoints
+//!
+//! - `GET /health` - Health check (always allowed)
+//! - `GET /ready` - Readiness check with stats
+//! - `GET /metrics` - Prometheus metrics
+//! - `GET /_waf_challenge` - Bot challenge page
+//! - `* /**` - Proxy to upstream (with WAF processing)
 
 use axum::{
     body::Body,
