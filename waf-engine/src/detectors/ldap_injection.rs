@@ -1,6 +1,35 @@
 //! LDAP Injection Detector
 //!
 //! Detects LDAP injection attacks.
+//!
+//! ## What is LDAP Injection?
+//!
+//! LDAP injection exploits applications that construct LDAP queries
+//! from user input. Attackers can:
+//! - Bypass authentication
+//! - Discover sensitive information
+//! - Modify LDAP tree structure
+//!
+//! ## Detection Patterns
+//!
+//! 1. **Wildcard abuse**: `*` in filters
+//! 2. **Parentheses injection**: `(uid=*)`
+//! 3. **Hex encoding**: `\x00`, `\2a` for asterisk
+//! 4. **Attribute manipulation**: `uid=admin)(password=test`
+//!
+//! ## Dangerous Patterns
+//!
+//! - `*` alone or in filter context
+//! - `(attribute=* )`
+//! - Nested parentheses `(|(...)(...))`
+//! - Empty values that might bypass validation
+//!
+//! ## Confidence Scoring
+//!
+//! - 0.85: Parentheses injection
+//! - 0.80: Attribute manipulation
+//! - 0.75: Hex encoding
+//! - 0.70: Wildcard in filter
 
 use regex::Regex;
 use waf_common::*;
