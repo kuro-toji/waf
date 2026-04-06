@@ -1,6 +1,31 @@
 //! IP Reputation Database
 //!
 //! Manages IP reputation and known bot/TOR/VPN lists.
+//!
+//! ## Reputation Categories
+//!
+//! - **Clean**: Normal traffic, no suspicious activity
+//! - **Suspicious**: Some attack patterns detected
+//! - **Malicious**: Confirmed attack source
+//! - **Tor**: TOR exit node
+//! - **Vpn**: Known VPN provider
+//! - **Proxy**: Known proxy server
+//! - **Bot**: Confirmed automated tool
+//!
+//! ## Scoring System
+//!
+//! IP reputation uses a 0-100 score:
+//! - 0-30: Clean (normal traffic)
+//! - 31-50: Suspicious (possible probes)
+//! - 51-80: Likely malicious (attack patterns)
+//! - 81-100: Confirmed attacker
+//!
+//! ## Data Sources
+//!
+//! - TOR exit node lists (updated regularly)
+//! - VPN provider IP ranges
+//! - Observed attack patterns
+//! - Third-party threat intelligence
 
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;
