@@ -1,8 +1,8 @@
 // Benchmark helper functions for WAF performance testing
 
-use std::time::{Duration, Instant};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 /// Simulate request processing with given latency
 pub fn simulate_request(latency_ms: u64) {
@@ -16,15 +16,15 @@ where
 {
     let counter = Arc::new(AtomicUsize::new(0));
     let end_time = Instant::now() + Duration::from_secs(duration_secs);
-    
+
     let mut successes = 0;
-    
+
     while Instant::now() < end_time {
         if f() {
             successes += 1;
         }
     }
-    
+
     successes
 }
 
@@ -33,14 +33,14 @@ pub fn calculate_percentiles(durations: &[Duration]) -> (Duration, Duration, Dur
     if durations.is_empty() {
         return (Duration::ZERO, Duration::ZERO, Duration::ZERO);
     }
-    
+
     let mut sorted = durations.to_vec();
     sorted.sort();
-    
+
     let p50_idx = durations.len() * 50 / 100;
     let p95_idx = durations.len() * 95 / 100;
     let p99_idx = durations.len() * 99 / 100;
-    
+
     (
         sorted[p50_idx],
         sorted[p95_idx.min(sorted.len() - 1)],
@@ -67,7 +67,7 @@ mod tests {
             Duration::from_millis(20),
             Duration::from_millis(100),
         ];
-        
+
         let (p50, p95, p99) = calculate_percentiles(&durations);
         assert_eq!(p50, Duration::from_millis(10));
     }
