@@ -12,6 +12,7 @@ thiserror = { workspace = true }
 tracing = { workspace = true }
 chrono = { workspace = true }
 http = { workspace = true }
+md5 = "0.8"
 
 [dev-dependencies]
 tokio-test = "0.4"
