@@ -42,6 +42,22 @@ pub async fn process_request(
     // Build request context
     let ctx = build_request_context(&mut request, client_ip).await?;
 
+    // Check threat feeds (fast path - block known malicious IPs early)
+    if let Some(ref threat_feeds) = state.threat_feeds {
+        let client_ip_addr: std::net::IpAddr = ctx.client_ip.parse().unwrap_or_else(|_| "0.0.0.0".parse().unwrap());
+        if threat_feeds.is_blocked(&client_ip_addr).await {
+            tracing::warn!(
+                target: "threat_feed",
+                client_ip = %ctx.client_ip,
+                "Blocked request from known malicious IP"
+            );
+            return Ok(create_block_response(
+                StatusCode::FORBIDDEN,
+                "Access denied: known malicious source",
+            ));
+        }
+    }
+
     // Check rate limit
     let rate_limit_result = state.rate_limiter.check(&ctx.client_ip).await?;
     if rate_limit_result.exceeded {
