@@ -2,56 +2,70 @@
 
 <div align="center">
 
-**Open-source enterprise-grade WAF that surpasses Cloudflare protection**
+**Self-hosted Web Application Firewall built in Rust**
 
-[Rust](https://www.rust-lang.org/) • [Async](https://tokio.rs/) • [OWASP Top 10](https://owasp.org/Top10/) • [Prometheus](https://prometheus.io/) • [Grafana](https://grafana.com/)
+[Rust](https://www.rust-lang.org/) • [Async I/O](https://tokio.rs/) • [OWASP Top 10](https://owasp.org/Top10/) • [Prometheus](https://prometheus.io/) • [Grafana](https://grafana.com/)
 
 [![build](https://github.com/username/waf/actions/workflows/build.yml/badge.svg)](https://github.com/username/waf/actions/workflows/build.yml)
-[![clippy](https://github.com/username/waf/actions/workflows/lint.yml/badge.svg)](https://github.com/username/waf/actions/workflows/lint.yml)
+[![clippy](https://github.com/username/waf/actions/workflows/lint.yml/badge.svg)](https://github.com/username/waf/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 </div>
 
 ---
 
-## Why WAF?
+## Overview
 
-Modern web applications face constant threats from attackers. Cloudflare and similar solutions work, but they:
+WAF is an open-source Web Application Firewall designed for teams who want visibility and control over their traffic filtering logic. It runs as a self-hosted reverse proxy, intercepting requests before they reach your application.
 
-- Lock you into their ecosystem
-- Charge enterprise prices for real protection
-- Don't let you see or customize detection rules
-- Force you to trust their black box
+**What WAF provides:**
+- Protection against OWASP Top 10 attacks (SQL injection, XSS, CSRF, path traversal, command injection, etc.)
+- Configurable rule engine with YAML-based rule definitions
+- Multiple rate limiting algorithms with distributed state via Redis
+- Bot detection with fingerprinting and challenge mechanisms
+- Prometheus metrics and Grafana dashboards for observability
+- Hot reload for rules without service interruption
 
-**WAF changes that.** It's a fully open-source, self-hosted WAF that you control completely.
+**What WAF is:**
+- A rule-based request filter that you operate and maintain
+- A Rust application optimized for high-throughput, low-latency filtering
+- A solution for teams with the expertise to deploy and manage infrastructure
+
+**What WAF is not:**
+- A turnkey security solution requiring no operational expertise
+- A replacement for comprehensive application security practices
+- A service with SLA guarantees or vendor support
 
 ---
 
 ## Features
 
 ### Security
-- **OWASP Top 10 Protection**: SQL injection, XSS, CSRF, path traversal, command injection, XXE, LDAP injection, and more
-- **Bot Detection**: Fingerprinting, behavioral analysis, JavaScript challenges, CAPTCHA support
-- **Rate Limiting**: Token bucket, sliding window, leaky bucket algorithms with Redis backend
-- **Bypass Prevention**: Encoding detection, case manipulation, null byte injection
+
+| Feature | Description |
+|---------|-------------|
+| **OWASP Top 10 Protection** | Detection rules for SQL injection, XSS, CSRF, path traversal, command injection, XXE, LFI, RFI, LDAP injection |
+| **Bot Detection** | Client fingerprinting, IP reputation, JavaScript challenges, CAPTCHA integration |
+| **Rate Limiting** | Token bucket, sliding window, leaky bucket algorithms; Redis-backed for distributed deployments |
+| **Bypass Prevention** | Encoding detection, case normalization, null byte handling |
 
 ### Performance
-- **Rust**: Memory-safe, zero-cost abstractions, native performance
-- **Async I/O**: Non-blocking request handling with Tokio
-- **Connection Pooling**: Keep-alive to upstream servers
-- **Graceful Hot Reload**: Update rules without dropping connections
 
-### Deployment
-- **Docker Ready**: Single image or full stack with docker-compose
-- **Kubernetes**: Helm chart included
-- **Cloud Providers**: Terraform for AWS and GCP
-- **YAML Configuration**: Human-readable rules anyone can edit
+| Feature | Description |
+|---------|-------------|
+| **Rust Runtime** | Memory-safe, zero-cost abstractions |
+| **Async I/O** | Non-blocking request handling via Tokio |
+| **Connection Pooling** | Keep-alive connections to upstream servers |
+| **Hot Reload** | Rule updates without dropping active connections |
 
-### Observability
-- **Prometheus Metrics**: Request counts, latency histograms, attack detection rates
-- **Grafana Dashboards**: Pre-built dashboards for real-time monitoring
-- **Structured Logging**: JSON logs for easy integration with ELK/Splunk
-- **Admin API**: RESTful API for rule management and statistics
+### Operations
+
+| Feature | Description |
+|---------|-------------|
+| **Prometheus Metrics** | Request counts, latency histograms, attack detection rates |
+| **Grafana Dashboards** | Pre-built dashboards for real-time monitoring |
+| **Structured Logging** | JSON-formatted logs for ELK/Splunk integration |
+| **Admin API** | RESTful interface for rule management and statistics |
 
 ---
 
@@ -87,48 +101,63 @@ Modern web applications face constant threats from attackers. Cloudflare and sim
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+### Module Structure
+
+| Crate | Purpose |
+|-------|---------|
+| `waf-common` | Shared types, configuration structures, error handling |
+| `waf-engine` | Rule matching engine and attack detectors |
+| `waf-rate-limiter` | Rate limiting algorithms (token bucket, sliding window, leaky bucket) |
+| `waf-bot-detector` | Client fingerprinting, reputation database, challenge system |
+| `waf-core` | HTTP proxy server with TLS termination |
+| `waf-admin` | REST API for management operations |
+| `waf-dashboard` | React-based admin dashboard |
+
 ---
 
 ## Quick Start
 
-### Docker (Recommended)
+### Docker Compose (Recommended)
 
 ```bash
-# Clone and start
 git clone https://github.com/username/waf.git
 cd waf
 
-# Start all services
+# Start WAF with Prometheus, Grafana, and Redis
 docker-compose up -d
 
-# View logs
+# Verify services are running
+docker-compose ps
+
+# View WAF logs
 docker-compose logs -f waf-core
 
-# Access dashboard
+# Access Grafana dashboard
 open http://localhost:3000
 ```
 
 ### Manual Build
 
 ```bash
-# Install Rust
+# Install Rust 1.75+
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# Build
+# Build release binaries
 cargo build --release
 
-# Run
-./target/release/waf-core --config config/production.yaml
+# Run with configuration file
+./target/release/waf-core --config config/waf.yaml
 ```
 
 ---
 
 ## Configuration
 
-Rules are defined in human-readable YAML:
+### Rule Definition
+
+Rules are defined in YAML with conditions and actions:
 
 ```yaml
-# rules/owasp-top10.yaml
 rules:
   - id: sqli-001
     name: "SQL Injection Detection"
@@ -143,96 +172,115 @@ rules:
     reason: "SQL injection attempt detected"
 ```
 
+### Global Configuration
+
+```yaml
+server:
+  host: "0.0.0.0"
+  port: 8080
+  upstream_url: "http://localhost:3000"
+
+rules:
+  path: "./rules"
+  severity_threshold: medium
+
+rate_limiter:
+  enabled: true
+  algorithm: token_bucket
+  requests_per_second: 100
+  burst: 200
+
+redis:
+  enabled: true
+  url: "redis://localhost:6379"
+```
+
 ---
 
-## Modules
+## API Reference
 
-| Crate | Purpose |
-|-------|---------|
-| `waf-common` | Shared types, config, error handling |
-| `waf-engine` | Core rule matching and attack detection |
-| `waf-rate-limiter` | Token bucket, sliding window, leaky bucket |
-| `waf-bot-detector` | Fingerprinting, challenges, allowlisting |
-| `waf-core` | HTTP proxy server with TLS support |
-| `waf-admin` | REST API for management |
-| `waf-dashboard` | React-based admin dashboard |
-
----
-
-## API Endpoints
+### Management API (waf-admin)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/rules` | List all rules |
-| POST | `/api/rules` | Create new rule |
-| PUT | `/api/rules/{id}` | Update rule |
-| DELETE | `/api/rules/{id}` | Delete rule |
-| GET | `/api/stats` | Get attack statistics |
-| GET | `/api/logs` | Get attack logs |
-| GET | `/metrics` | Prometheus metrics |
-| GET | `/health` | Health check |
+| `GET` | `/api/rules` | List all rules |
+| `POST` | `/api/rules` | Create a new rule |
+| `GET` | `/api/rules/{id}` | Get rule by ID |
+| `PUT` | `/api/rules/{id}` | Update rule |
+| `DELETE` | `/api/rules/{id}` | Delete rule |
+| `GET` | `/api/stats` | Get statistics summary |
+| `GET` | `/api/stats/attacks` | Get attack type breakdown |
+| `GET` | `/api/logs` | Get attack logs (paginated) |
+| `GET` | `/api/config` | Get current configuration |
+| `PUT` | `/api/config` | Update configuration |
+
+### Proxy Endpoints (waf-core)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/health` | Health check |
+| `GET` | `/ready` | Readiness probe with stats |
+| `GET` | `/metrics` | Prometheus metrics |
+| `GET` | `/_waf_challenge` | Bot challenge page |
 
 ---
 
-## Monitoring
+## Metrics
 
-### Prometheus Metrics
+WAF exposes Prometheus metrics at `GET /metrics`:
 
 ```
-# HELP waf_requests_total Total requests processed
-# TYPE waf_requests_total counter
+# Request counters
 waf_requests_total{status="allowed"} 12345
 waf_requests_total{status="blocked"} 67
 
-# HELP waf_latency_seconds Request latency histogram
-# TYPE waf_latency_seconds histogram
+# Latency histogram
 waf_latency_seconds_bucket{le="0.01"} 10000
 waf_latency_seconds_bucket{le="0.1"} 12000
+waf_latency_seconds_bucket{le="1"} 12500
+waf_latency_seconds_bucket{le="+Inf"} 12567
 
-# HELP waf_attacks_total Attacks detected by type
-# TYPE waf_attacks_total counter
+# Attack detection counter
 waf_attacks_total{type="sqli"} 23
 waf_attacks_total{type="xss"} 15
+waf_attacks_total{type="path_traversal"} 8
+
+# Rate limiter metrics
+waf_rate_limit_exceeded_total{algorithm="token_bucket"} 42
 ```
-
-### Grafana Dashboard
-
-Pre-built dashboard with:
-- Real-time request rate
-- Attack detection breakdown
-- Latency percentiles
-- Top blocked IPs
-- Geographic distribution
 
 ---
 
 ## Development
 
 ```bash
-# Build all crates
+# Build all workspace crates
 cargo build --release
 
 # Run tests
-cargo test --all
+cargo test --workspace
 
-# Run clippy lints
-cargo clippy --all
+# Run linter
+cargo clippy --workspace -- -D warnings
 
 # Format code
 cargo fmt --all
 
-# Run with custom config
-RUST_LOG=debug ./target/release/waf-core --config config/development.yaml
+# Run integration tests
+cargo test --test integration_tests
+
+# Development run with debug logging
+RUST_LOG=debug ./target/release/waf-core --config config/waf.yaml
 ```
 
 ---
 
-## Production Deployment
+## Deployment
 
-### Kubernetes
+### Kubernetes (Helm)
 
 ```bash
-helm install waf ./helm/waf -n waf-system
+helm install waf ./helm/waf -n waf-system --create-namespace
 ```
 
 ### AWS (Terraform)
@@ -240,21 +288,54 @@ helm install waf ./helm/waf -n waf-system
 ```bash
 cd terraform/aws
 terraform init
+terraform plan
 terraform apply
 ```
 
-### Configuration
+### GCP (Terraform)
 
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed production guidance.
+```bash
+cd terraform/gcp
+terraform init
+terraform plan
+terraform apply
+```
+
+---
+
+## Production Considerations
+
+Before deploying WAF in production, evaluate:
+
+1. **Rule Tuning**: Default rules may require adjustment for your application's traffic patterns
+2. **Performance Testing**: Benchmark against your actual request volume and latency requirements
+3. **High Availability**: Multiple WAF instances behind a load balancer with shared Redis state
+4. **Monitoring**: Set up alerts for attack spikes and rate limit occurrences
+5. **Logging**: Configure log rotation and storage capacity for attack logs
+
+See [docs/PRODUCTION_CHECKLIST.md](docs/PRODUCTION_CHECKLIST.md) for deployment guidance.
+
+---
+
+## Documentation
+
+| Document | Content |
+|----------|---------|
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design and component interactions |
+| [ARCHITECTURE_DECISIONS.md](docs/ARCHITECTURE_DECISIONS.md) | Design decisions and tradeoffs |
+| [RULES.md](docs/RULES.md) | Rule syntax and available match types |
+| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Deployment options and configuration |
+| [API.md](docs/API.md) | API endpoint reference |
+| [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common issues and solutions |
 
 ---
 
 ## Contributing
 
-Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions are welcome. Please review [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on code style, testing, and pull request process.
 
 ---
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) for details.
+MIT License. See [LICENSE](LICENSE) for full license text.
