@@ -18,6 +18,7 @@ uuid = { workspace = true }
 http = { workspace = true }
 notify = "6.1"  # For hot reload
 parking_lot = "0.12"  # For better async mutexes
+tempfile = "3.8"  # For tests
 
 [dev-dependencies]
 tokio-test = "0.4"
