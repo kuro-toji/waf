@@ -5,16 +5,20 @@
 //! ## Pipeline Stages
 //!
 //! 1. **Context Building**: Extract request info (IP, headers, body)
-//! 2. **Rate Limit Check**: Check rate limits, reject if exceeded
-//! 3. **Bot Detection**: Analyze fingerprint, decide challenge/block
-//! 4. **Rule Evaluation**: Run all rules, collect matches
-//! 5. **Decision**: Allow, block, or challenge based on results
-//! 6. **Logging**: Log attack info if blocked
-//! 7. **Forward**: Forward to upstream if allowed
+//! 2. **Threat Feed Check**: Block known malicious IPs early
+//! 3. **Rate Limit Check**: Check rate limits, reject if exceeded
+//! 4. **Anomaly Detection**: Statistical anomaly scoring
+//! 5. **Bot Detection**: Analyze fingerprint, decide challenge/block
+//! 6. **Rule Evaluation**: Run all rules, collect matches
+//! 7. **Decision**: Allow, block, or challenge based on results
+//! 8. **Logging**: Log attack info if blocked
+//! 9. **Forward**: Forward to upstream if allowed
 //!
 //! ## Error Handling
 //!
+//! - Threat feed match: Return 403 Forbidden
 //! - Rate limit exceeded: Return 429 Too Many Requests
+//! - Statistical anomaly: Add to request score
 //! - Bot detected: Return 403 with challenge page if configured
 //! - Rule match: Return 403 with block message
 //! - Upstream error: Return 502 Bad Gateway
@@ -22,6 +26,7 @@
 use axum::{body::Body, extract::Request, response::Response};
 use http::{HeaderMap, StatusCode};
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use waf_common::*;
 use crate::AppState;
@@ -66,6 +71,40 @@ pub async fn process_request(
             StatusCode::TOO_MANY_REQUESTS,
             "Rate limit exceeded. Please try again later.",
         ));
+    }
+
+    // Statistical anomaly detection
+    let request_start = Instant::now();
+    {
+        let mut manager = state.anomaly_manager.write().await;
+        
+        // Track request rate for this IP
+        manager.add_sample(MetricType::RequestRate, rate_limit_result.requests_in_window as f64);
+        
+        // Track header size
+        manager.add_sample(MetricType::HeaderSize, ctx.headers.len() as f64);
+        
+        // Track body size (if applicable)
+        if let Some(body_len) = ctx.body_length {
+            manager.add_sample(MetricType::BodySize, body_len as f64);
+        }
+        
+        // Check for anomalies in these metrics
+        let request_rate_score = manager.get_score(MetricType::RequestRate, rate_limit_result.requests_in_window as f64);
+        let header_score = manager.get_score(MetricType::HeaderSize, ctx.headers.len() as f64);
+        
+        let global_score = manager.get_global_score();
+        
+        if global_score > 0.7 {
+            tracing::warn!(
+                target: "anomaly",
+                client_ip = %ctx.client_ip,
+                global_score = %global_score,
+                request_rate_score = %request_rate_score,
+                header_score = %header_score,
+                "Statistical anomaly detected"
+            );
+        }
     }
 
     // Bot detection
@@ -119,7 +158,17 @@ pub async fn process_request(
     }
 
     // Forward request to upstream
+    let response_start = Instant::now();
     let upstream_response = forward_to_upstream(&state, request, &ctx).await?;
+    let response_time = response_start.elapsed();
+    
+    // Track response time anomaly
+    {
+        let mut manager = state.anomaly_manager.write().await;
+        manager.add_sample(MetricType::ResponseTime, response_time.as_millis() as f64);
+    }
+    
+    let _request_duration = request_start.elapsed(); // Total request time
 
     Ok(upstream_response)
 }

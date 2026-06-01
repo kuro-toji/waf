@@ -23,7 +23,7 @@ mod upstream;
 mod metrics;
 
 use std::sync::Arc;
-use waf_common::{WafConfig, WafError, ThreatFeedManager};
+use waf_common::{WafConfig, WafError, ThreatFeedManager, SharedAnomalyManager, create_shared_manager};
 use waf_engine::{RuleMatcher, RuleLoader};
 use waf_rate_limiter::RateLimiter;
 use waf_bot_detector::BotDetector;
@@ -37,6 +37,7 @@ pub struct AppState {
     pub rate_limiter: Arc<RateLimiter>,
     pub bot_detector: Arc<BotDetector>,
     pub threat_feeds: Option<Arc<ThreatFeedManager>>,
+    pub anomaly_manager: SharedAnomalyManager,
     pub stats: Arc<std::sync::atomic::AtomicU64>,
 }
 
