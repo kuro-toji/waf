@@ -6,6 +6,9 @@
 //!
 //! - [`HttpMethod`] - HTTP method enumeration
 //! - [`Severity`] - Attack severity levels (Info, Low, Medium, High, Critical)
+//! - [`Sensitivity`] - Attack scoring sensitivity levels (Low, Medium, High)
+//! - [`ScoringConfig`] - Configuration for cumulative attack scoring
+//! - [`AttackScore`] - Result of attack scoring evaluation
 //! - [`Action`] - WAF actions (Allow, Block, Challenge, Log)
 //! - [`MatchType`] - Rule matching strategies
 //! - [`MatchField`] - Request fields that can be matched
@@ -14,11 +17,17 @@
 //! - [`EvaluationResult`] - Rule evaluation outcome
 //! - [`AttackLog`] - Attack logging structure
 //!
+//! ## Attack Scoring (OWASP CRS Style)
+//!
+//! Implements cumulative scoring where each matched rule adds to an anomaly score.
+//! Based on OWASP Core Rule Set cooperative blocking model.
+//!
 //! ## Usage Example
 //!
 //! ```rust
-//! use waf_common::{Rule, HttpMethod, Severity, Action, MatchCondition, MatchType, MatchField};
+//! use waf_common::{Rule, HttpMethod, Severity, Sensitivity, Action, MatchCondition, MatchType, MatchField, ScoringConfig, AttackScore};
 //!
+//! // Create a rule
 //! let mut rule = Rule::new(
 //!     "SQL Injection Detection".to_string(),
 //!     Severity::Critical,
@@ -30,7 +39,12 @@
 //!     value: "(?i)union.*select".to_string(),
 //!     case_insensitive: true,
 //! });
+//!
+//! // Configure scoring with Medium sensitivity (blocks at score >= 40)
+//! let scoring = ScoringConfig::medium();
 //! ```
+
+use std::collections::HashMap;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -87,7 +101,7 @@ impl From<&str> for HttpMethod {
 }
 
 /// Attack severity levels
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum Severity {
     Info = 0,
@@ -100,6 +114,332 @@ pub enum Severity {
 impl Default for Severity {
     fn default() -> Self {
         Severity::Info
+    }
+}
+
+impl Severity {
+    /// Get the default score weight for this severity level
+    /// Base scores follow OWASP CRS anomaly scoring: critical=5, error=4, warning=3, notice=2
+    pub fn score_weight(&self) -> u32 {
+        match self {
+            Severity::Critical => 5,
+            Severity::High => 4,
+            Severity::Medium => 3,
+            Severity::Low => 2,
+            Severity::Info => 1,
+        }
+    }
+}
+
+/// Sensitivity levels for attack scoring (OWASP CRS style paranoia levels)
+/// Determines the threshold at which requests are blocked.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum Sensitivity {
+    /// Low sensitivity: block only at very high scores (threshold=60)
+    /// Suitable for applications with high legitimate traffic variation
+    #[default]
+    Low = 0,
+    /// Medium sensitivity: balanced blocking (threshold=40)
+    /// Default for most production environments
+    Medium = 1,
+    /// High sensitivity: aggressive blocking at low scores (threshold=20)
+    /// Use when false positives are acceptable trade-off for security
+    High = 2,
+}
+
+impl Sensitivity {
+    /// Get the cumulative score threshold for blocking
+    /// Requests with score >= this value are blocked
+    pub fn block_threshold(&self) -> u32 {
+        match self {
+            Sensitivity::Low => 60,
+            Sensitivity::Medium => 40,
+            Sensitivity::High => 20,
+        }
+    }
+
+    /// Get the cumulative score threshold for challenging
+    /// Requests with score >= this but < block_threshold get a challenge
+    pub fn challenge_threshold(&self) -> u32 {
+        // Challenge at 25% of block threshold
+        (self.block_threshold() as f32 * 0.25) as u32
+    }
+
+    /// Get the cumulative score threshold for logging
+    /// Requests with score >= this but < challenge_threshold are logged only
+    pub fn log_threshold(&self) -> u32 {
+        // Log at 10% of block threshold
+        (self.block_threshold() as f32 * 0.10) as u32
+    }
+
+    /// Create a Sensitivity from a string (for config parsing)
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s.to_lowercase().as_str() {
+            "low" => Some(Sensitivity::Low),
+            "medium" => Some(Sensitivity::Medium),
+            "high" => Some(Sensitivity::High),
+            _ => None,
+        }
+    }
+}
+
+/// Configuration for attack scoring system
+/// Implements OWASP CRS style cooperative blocking with cumulative anomaly scores
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ScoringConfig {
+    /// Enable cumulative attack scoring
+    #[serde(default)]
+    pub enabled: bool,
+
+    /// Sensitivity level for blocking decisions
+    #[serde(default)]
+    pub sensitivity: Sensitivity,
+
+    /// Custom severity weights (overrides defaults)
+    /// Maps severity level to score weight
+    #[serde(default)]
+    pub severity_weights: HashMap<Severity, u32>,
+
+    /// Attack type multipliers
+    /// Maps attack type tag to score multiplier (e.g., "sqli" -> 1.5)
+    #[serde(default)]
+    pub attack_multipliers: HashMap<String, f32>,
+
+    /// Maximum cumulative score before capping
+    #[serde(default = "default_max_score")]
+    pub max_score: u32,
+
+    /// Rules excluded from scoring (IDs)
+    #[serde(default)]
+    pub score_exempt_rules: Vec<String>,
+
+    /// Whether to block immediately on first critical match
+    /// (short-circuit evaluation)
+    #[serde(default = "default_true")]
+    pub short_circuit_critical: bool,
+}
+
+fn default_max_score() -> u32 {
+    100
+}
+
+fn default_true() -> bool {
+    true
+}
+
+impl Default for ScoringConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false, // Disabled by default for backward compatibility
+            sensitivity: Sensitivity::Medium,
+            severity_weights: HashMap::new(), // Use defaults
+            attack_multipliers: HashMap::new(), // No multipliers by default
+            max_score: 100,
+            score_exempt_rules: Vec::new(),
+            short_circuit_critical: true,
+        }
+    }
+}
+
+impl ScoringConfig {
+    /// Create a config with low sensitivity
+    pub fn low() -> Self {
+        Self {
+            enabled: true,
+            sensitivity: Sensitivity::Low,
+            ..Default::default()
+        }
+    }
+
+    /// Create a config with medium sensitivity
+    pub fn medium() -> Self {
+        Self {
+            enabled: true,
+            sensitivity: Sensitivity::Medium,
+            ..Default::default()
+        }
+    }
+
+    /// Create a config with high sensitivity
+    pub fn high() -> Self {
+        Self {
+            enabled: true,
+            sensitivity: Sensitivity::High,
+            ..Default::default()
+        }
+    }
+
+    /// Get the weight for a severity level (custom or default)
+    pub fn severity_weight(&self, severity: Severity) -> u32 {
+        self.severity_weights
+            .get(&severity)
+            .copied()
+            .unwrap_or_else(|| severity.score_weight())
+    }
+
+    /// Get the multiplier for an attack type
+    pub fn attack_multiplier(&self, attack_type: &str) -> f32 {
+        self.attack_multipliers
+            .get(attack_type)
+            .copied()
+            .unwrap_or(1.0)
+    }
+
+    /// Check if a rule is exempt from scoring
+    pub fn is_exempt(&self, rule_id: &str) -> bool {
+        self.score_exempt_rules.iter().any(|id| id == rule_id)
+    }
+}
+
+/// Result of cumulative attack scoring
+/// Contains score breakdown and recommended action
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AttackScore {
+    /// Total cumulative score (capped at max_score)
+    pub total: u32,
+
+    /// Score breakdown by severity level
+    pub by_severity: HashMap<Severity, u32>,
+
+    /// Individual rule contributions to the score
+    pub contributions: Vec<RuleScoreContribution>,
+
+    /// Detected attack types from rule tags
+    pub attack_types: Vec<String>,
+
+    /// Whether the threshold for blocking was exceeded
+    pub should_block: bool,
+
+    /// Whether the threshold for challenging was exceeded
+    pub should_challenge: bool,
+
+    /// Whether the threshold for logging was exceeded
+    pub should_log: bool,
+
+    /// The sensitivity level used for evaluation
+    pub sensitivity: Sensitivity,
+
+    /// Block threshold at current sensitivity
+    pub block_threshold: u32,
+}
+
+/// Contribution from a single matched rule to the attack score
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RuleScoreContribution {
+    /// Rule identifier
+    pub rule_id: String,
+    /// Rule name
+    pub rule_name: String,
+    /// Severity level of the rule
+    pub severity: Severity,
+    /// Base score from severity weight
+    pub base_score: u32,
+    /// Score after applying attack type multiplier
+    pub weighted_score: u32,
+    /// Attack type tag if matched
+    pub attack_type: Option<String>,
+}
+
+impl AttackScore {
+    /// Calculate attack score from matched rules using scoring config
+    pub fn calculate(rules: &[&Rule], config: &ScoringConfig) -> Self {
+        if !config.enabled {
+            return Self::zero(Sensitivity::Medium);
+        }
+
+        let mut total = 0u32;
+        let mut by_severity: HashMap<Severity, u32> = HashMap::new();
+        let mut contributions = Vec::new();
+        let mut attack_types = Vec::new();
+
+        for rule in rules {
+            // Skip exempt rules
+            if config.is_exempt(&rule.id) {
+                continue;
+            }
+
+            // Calculate base score from severity
+            let base_score = config.severity_weight(rule.severity);
+
+            // Find attack type from tags
+            let attack_type = rule.tags.iter().find(|t| {
+                config.attack_multipliers.contains_key(*t)
+            }).cloned();
+
+            // Apply attack type multiplier
+            let multiplier = attack_type
+                .as_ref()
+                .map(|at| config.attack_multiplier(at))
+                .unwrap_or(1.0);
+
+            let weighted_score = (base_score as f32 * multiplier) as u32;
+
+            // Add to totals
+            total += weighted_score;
+            *by_severity.entry(rule.severity).or_insert(0) += weighted_score;
+
+            // Track attack types
+            if let Some(ref at) = attack_type {
+                if !attack_types.contains(at) {
+                    attack_types.push(at.clone());
+                }
+            }
+
+            // Record contribution
+            contributions.push(RuleScoreContribution {
+                rule_id: rule.id.clone(),
+                rule_name: rule.name.clone(),
+                severity: rule.severity,
+                base_score,
+                weighted_score,
+                attack_type,
+            });
+
+            // Short-circuit on critical if configured
+            if config.short_circuit_critical && rule.severity == Severity::Critical {
+                total = total.max(config.sensitivity.block_threshold());
+                break;
+            }
+        }
+
+        // Cap at max score
+        total = total.min(config.max_score);
+
+        let sensitivity = config.sensitivity;
+        let block_threshold = sensitivity.block_threshold();
+
+        Self {
+            total,
+            by_severity,
+            contributions,
+            attack_types,
+            should_block: total >= block_threshold,
+            should_challenge: total >= sensitivity.challenge_threshold() && total < block_threshold,
+            should_log: total >= sensitivity.log_threshold(),
+            sensitivity,
+            block_threshold,
+        }
+    }
+
+    /// Create a zero score (no attacks)
+    pub fn zero(sensitivity: Sensitivity) -> Self {
+        Self {
+            total: 0,
+            by_severity: HashMap::new(),
+            contributions: Vec::new(),
+            attack_types: Vec::new(),
+            should_block: false,
+            should_challenge: false,
+            should_log: false,
+            sensitivity,
+            block_threshold: sensitivity.block_threshold(),
+        }
+    }
+
+    /// Get score for a specific severity level
+    pub fn score_for_severity(&self, severity: Severity) -> u32 {
+        self.by_severity.get(&severity).copied().unwrap_or(0)
     }
 }
 
@@ -422,6 +762,9 @@ pub struct EvaluationResult {
     pub matched_rules: Vec<Rule>,
     /// Highest severity of matched attacks
     pub highest_severity: Option<Severity>,
+    /// Cumulative attack score (if scoring enabled)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub attack_score: Option<AttackScore>,
     /// Processing time in milliseconds
     pub processing_time_ms: u64,
     /// Timestamp
@@ -430,7 +773,11 @@ pub struct EvaluationResult {
 
 impl EvaluationResult {
     /// Create an allowed result
-    pub fn allowed(request_id: String, matched_rules: Vec<Rule>, processing_time_ms: u64) -> Self {
+    pub fn allowed(
+        request_id: String,
+        matched_rules: Vec<Rule>,
+        processing_time_ms: u64,
+    ) -> Self {
         let highest_severity = matched_rules.iter().map(|r| r.severity).max();
         Self {
             request_id,
@@ -438,6 +785,7 @@ impl EvaluationResult {
             action: Action::Allow,
             matched_rules,
             highest_severity,
+            attack_score: None,
             processing_time_ms,
             timestamp: Utc::now(),
         }
@@ -457,6 +805,46 @@ impl EvaluationResult {
             action,
             matched_rules,
             highest_severity,
+            attack_score: None,
+            processing_time_ms,
+            timestamp: Utc::now(),
+        }
+    }
+
+    /// Create from scoring result (new method)
+    pub fn from_scoring(
+        request_id: String,
+        matched_rules: Vec<Rule>,
+        attack_score: AttackScore,
+        processing_time_ms: u64,
+    ) -> Self {
+        let highest_severity = matched_rules.iter().map(|r| r.severity).max();
+        let allowed = !attack_score.should_block;
+        let action = if attack_score.should_block {
+            Action::Block {
+                status_code: 403,
+                body: "Access denied".to_string(),
+                reason: format!(
+                    "Attack score {} exceeds threshold {}",
+                    attack_score.total, attack_score.block_threshold
+                ),
+            }
+        } else if attack_score.should_challenge {
+            Action::Challenge {
+                challenge_type: ChallengeType::Javascript,
+                timeout: 300,
+            }
+        } else {
+            Action::Allow
+        };
+
+        Self {
+            request_id,
+            allowed,
+            action,
+            matched_rules,
+            highest_severity,
+            attack_score: Some(attack_score),
             processing_time_ms,
             timestamp: Utc::now(),
         }
