@@ -923,12 +923,13 @@ pub struct AttackLog {
 impl AttackLog {
     /// Create a new attack log
     pub fn new(request: RequestContext, attack_type: AttackType, matched_rule: Rule) -> Self {
+        let severity = matched_rule.severity;
         Self {
             id: Uuid::new_v4().to_string(),
             request,
             attack_type,
             matched_rule,
-            severity: matched_rule.severity,
+            severity,
             timestamp: Utc::now(),
             metadata: Vec::new(),
         }

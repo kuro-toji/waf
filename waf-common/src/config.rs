@@ -130,7 +130,7 @@ fn default_health_check() -> u64 {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RateLimiterConfig {
     /// Enable rate limiting
-    #[serde(default = "default_enabled")]
+    #[serde(default = "default_ratelimit_enabled")]
     pub enabled: bool,
     /// Default requests per window
     #[serde(default = "default_rate_limit")]
@@ -145,7 +145,7 @@ pub struct RateLimiterConfig {
     pub rules: Vec<RateLimitRule>,
 }
 
-fn default_enabled() -> bool {
+fn default_ratelimit_enabled() -> bool {
     true
 }
 
@@ -179,7 +179,7 @@ pub struct RateLimitRule {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BotDetectorConfig {
     /// Enable bot detection
-    #[serde(default = "default_enabled")]
+    #[serde(default = "default_botdetector_enabled")]
     pub enabled: bool,
     /// Enable JavaScript challenge
     #[serde(default = "default_js_challenge")]
@@ -191,7 +191,7 @@ pub struct BotDetectorConfig {
     #[serde(default = "default_challenge_timeout")]
     pub challenge_timeout: u64,
     /// IP reputation check enabled
-    #[serde(default = "default_enabled")]
+    #[serde(default = "default_botdetector_enabled")]
     pub ip_reputation_check: bool,
     /// Allow search engine bots
     #[serde(default = "default_allow_bots")]
@@ -217,6 +217,10 @@ fn default_allow_bots() -> bool {
 }
 
 fn default_block_tor() -> bool {
+    true
+}
+
+fn default_botdetector_enabled() -> bool {
     true
 }
 
@@ -251,7 +255,7 @@ fn default_log_format() -> String {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MetricsConfig {
     /// Enable Prometheus metrics endpoint
-    #[serde(default = "default_enabled")]
+    #[serde(default = "default_metrics_enabled")]
     pub enabled: bool,
     /// Metrics endpoint path
     #[serde(default = "default_metrics_path")]
@@ -263,7 +267,7 @@ pub struct MetricsConfig {
     pub push_interval: u64,
 }
 
-fn default_enabled() -> bool {
+fn default_metrics_enabled() -> bool {
     true
 }
 
@@ -279,7 +283,7 @@ fn default_push_interval() -> u64 {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AdminConfig {
     /// Enable admin API
-    #[serde(default = "default_enabled")]
+    #[serde(default = "default_admin_enabled")]
     pub enabled: bool,
     /// Listen address for admin service
     #[serde(default = "default_admin_listen")]
@@ -295,7 +299,7 @@ fn default_admin_listen() -> String {
     "127.0.0.1:8080".to_string()
 }
 
-fn default_enabled() -> bool {
+fn default_admin_enabled() -> bool {
     true
 }
 
@@ -307,7 +311,7 @@ fn default_cors() -> bool {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DashboardConfig {
     /// Enable dashboard
-    #[serde(default = "default_enabled")]
+    #[serde(default = "default_dashboard_enabled")]
     pub enabled: bool,
     /// Dashboard port
     #[serde(default = "default_dashboard_port")]
@@ -316,6 +320,10 @@ pub struct DashboardConfig {
 
 fn default_dashboard_port() -> u16 {
     3000
+}
+
+fn default_dashboard_enabled() -> bool {
+    true
 }
 
 impl Default for WafConfig {

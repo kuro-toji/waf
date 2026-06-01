@@ -32,6 +32,7 @@
 //! ```
 
 use waf_common::*;
+use crate::scoring::*;
 use parking_lot::RwLock;
 use std::sync::Arc;
 use regex::Regex;
@@ -41,6 +42,7 @@ use std::collections::HashMap;
 pub struct RuleMatcher {
     compiled_rules: Arc<RwLock<Vec<CompiledRule>>>,
     severity_threshold: Severity,
+    scoring_engine: Option<ScoringEngine>,
 }
 
 struct CompiledRule {
@@ -60,13 +62,44 @@ pub struct RuleMatch {
 }
 
 impl RuleMatcher {
-    /// Create a new rule matcher
+    /// Create a new rule matcher with default configuration (scoring disabled)
     pub fn new(rules: Vec<Rule>, severity_threshold: Severity) -> Self {
-        let compiled = Self::compile_rules(rules);
         Self {
-            compiled_rules: Arc::new(RwLock::new(compiled)),
+            compiled_rules: Arc::new(RwLock::new(Self::compile_rules(rules))),
             severity_threshold,
+            scoring_engine: None,
         }
+    }
+
+    /// Create a new rule matcher with scoring enabled
+    pub fn with_scoring(rules: Vec<Rule>, severity_threshold: Severity, scoring_config: ScoringConfig) -> Self {
+        let scoring_engine = if scoring_config.enabled {
+            Some(ScoringEngine::new(scoring_config))
+        } else {
+            None
+        };
+        Self {
+            compiled_rules: Arc::new(RwLock::new(Self::compile_rules(rules))),
+            severity_threshold,
+            scoring_engine,
+        }
+    }
+
+    /// Enable attack scoring with the given configuration
+    pub fn enable_scoring(&mut self, config: ScoringConfig) {
+        if config.enabled {
+            self.scoring_engine = Some(ScoringEngine::new(config));
+        }
+    }
+
+    /// Disable attack scoring
+    pub fn disable_scoring(&mut self) {
+        self.scoring_engine = None;
+    }
+
+    /// Check if scoring is enabled
+    pub fn is_scoring_enabled(&self) -> bool {
+        self.scoring_engine.as_ref().map(|e| e.is_enabled()).unwrap_or(false)
     }
 
     /// Compile rules into internal representation
@@ -104,20 +137,55 @@ impl RuleMatcher {
         *guard = compiled;
     }
 
-    /// Evaluate a request against all rules
+    /// Evaluate a request against all rules (legacy method)
     pub fn evaluate(&self, ctx: &RequestContext) -> EvaluationResult {
         let start = std::time::Instant::now();
-        let mut matched_rules = Vec::new();
+        let matched_rules = self.find_matched_rules(ctx);
+        let processing_time = start.elapsed().as_millis() as u64;
+
+        // If scoring is enabled, use scoring-based evaluation
+        if let Some(ref engine) = self.scoring_engine {
+            let rule_refs: Vec<&Rule> = matched_rules.iter().collect();
+            let attack_score = engine.calculate_score(&rule_refs);
+            return EvaluationResult::from_scoring(
+                ctx.id.clone(),
+                matched_rules,
+                attack_score,
+                processing_time,
+            );
+        }
+
+        // Legacy behavior: immediate block on matched Block action
         let mut blocked = false;
         let mut block_action = Action::Allow;
 
+        for rule in &matched_rules {
+            if let Action::Block { .. } = &rule.action {
+                blocked = true;
+                block_action = rule.action.clone();
+                if rule.severity >= Severity::Critical {
+                    break;
+                }
+            }
+        }
+
+        if blocked {
+            EvaluationResult::blocked(ctx.id.clone(), matched_rules, block_action, processing_time)
+        } else {
+            EvaluationResult::allowed(ctx.id.clone(), matched_rules, processing_time)
+        }
+    }
+
+    /// Find all matched rules without making blocking decision
+    pub fn find_matched_rules(&self, ctx: &RequestContext) -> Vec<Rule> {
+        let mut matched_rules = Vec::new();
+
         let rules = self.compiled_rules.read();
-        
+
         // Check if client IP is whitelisted
         let is_whitelisted = |ip: &str, whitelist: &[String]| -> bool {
             whitelist.iter().any(|w| {
                 if w.contains('/') {
-                    // CIDR notation - simplified check
                     ip.starts_with(&w[..w.rfind('.').unwrap_or(0)])
                 } else {
                     ip == w
@@ -127,7 +195,7 @@ impl RuleMatcher {
 
         for compiled in rules.iter() {
             let rule = &compiled.rule;
-            
+
             // Skip disabled rules
             if !rule.enabled {
                 continue;
@@ -154,32 +222,36 @@ impl RuleMatcher {
 
             if all_matched {
                 matched_rules.push(rule.clone());
-                
-                // Determine action (block immediately if high severity)
-                if let Action::Block { .. } = &rule.action {
-                    blocked = true;
-                    block_action = rule.action.clone();
-                    
-                    // Stop on critical severity
-                    if rule.severity >= Severity::Critical {
-                        break;
-                    }
-                }
             }
         }
 
+        matched_rules
+    }
+
+    /// Evaluate a request with scoring-based decision making
+    pub fn evaluate_with_scoring(&self, ctx: &RequestContext) -> EvaluationResult {
+        let start = std::time::Instant::now();
+        let matched_rules = self.find_matched_rules(ctx);
         let processing_time = start.elapsed().as_millis() as u64;
-        
-        if blocked {
-            EvaluationResult::blocked(
+
+        if let Some(ref engine) = self.scoring_engine {
+            let rule_refs: Vec<&Rule> = matched_rules.iter().collect();
+            let attack_score = engine.calculate_score(&rule_refs);
+            return EvaluationResult::from_scoring(
                 ctx.id.clone(),
                 matched_rules,
-                block_action,
+                attack_score,
                 processing_time,
-            )
-        } else {
-            EvaluationResult::allowed(ctx.id.clone(), matched_rules, processing_time)
+            );
         }
+
+        // Fallback to legacy evaluation if scoring not available
+        self.evaluate(ctx)
+    }
+
+    /// Get scoring configuration summary if scoring is enabled
+    pub fn scoring_summary(&self) -> Option<ScoringConfigSummary> {
+        self.scoring_engine.as_ref().map(|e| e.config_summary())
     }
 
     /// Evaluate a single condition against the request context
