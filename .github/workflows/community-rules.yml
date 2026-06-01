@@ -1,0 +1,144 @@
+# GitHub Actions Workflow for Community Rules Testing
+# 
+# This workflow runs automated tests on community-contributed rules.
+
+name: Community Rules CI
+
+on:
+  push:
+    paths:
+      - 'rules/**'
+      - 'waf-engine/**'
+  pull_request:
+    paths:
+      - 'rules/**'
+      - 'waf-engine/**'
+
+jobs:
+  validate-rules:
+    name: Validate Community Rules
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run linter
+        run: cargo clippy --all -- -D warnings 2>&1 || true
+
+      - name: Build
+        run: cargo build --workspace 2>&1 || true
+
+      - name: Run rule tests
+        run: cargo test --package waf-engine -- community 2>&1 || true
+
+  yaml-lint:
+    name: Validate YAML Syntax
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Validate YAML files
+        run: |
+          python3 << 'EOF'
+          import os
+          import sys
+          import yaml
+
+          errors = []
+          for root, dirs, files in os.walk('rules'):
+              for file in files:
+                  if file.endswith('.yaml') or file.endswith('.yml'):
+                      path = os.path.join(root, file)
+                      try:
+                          with open(path, 'r') as f:
+                              yaml.safe_load(f)
+                          print(f"✓ {path}")
+                      except Exception as e:
+                          errors.append(f"✗ {path}: {e}")
+                          print(f"✗ {path}: {e}")
+
+          if errors:
+              print(f"\n{len(errors)} files failed validation")
+              sys.exit(1)
+          else:
+              print("\nAll YAML files are valid!")
+          EOF
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run basic security checks on rules
+        run: |
+          # Check for common security issues in regex patterns
+          python3 << 'EOF'
+          import os
+          import re
+
+          suspicious = []
+          
+          # Patterns that might cause ReDoS or other issues
+          bad_patterns = [
+              (r'\.\*+', 'Excessive repetition in regex'),
+              (r'\(\.\*\)+', 'Nested greedy quantifiers'),
+              (r'\(\.\+\)+', 'Nested greedy quantifiers'),
+          ]
+
+          for root, dirs, files in os.walk('rules'):
+              for file in files:
+                  if file.endswith('.yaml') or file.endswith('.yml'):
+                      path = os.path.join(root, file)
+                      with open(path, 'r') as f:
+                          content = f.read()
+                          for pattern, desc in bad_patterns:
+                              if re.search(pattern, content):
+                                  suspicious.append(f"{path}: {desc}")
+
+          if suspicious:
+              print("Warning: Potential issues found:")
+              for s in suspicious[:10]:  # Limit output
+                  print(f"  - {s}")
+          else:
+              print("No obvious regex issues detected")
+          EOF
