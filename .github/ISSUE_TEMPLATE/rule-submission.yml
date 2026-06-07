@@ -94,4 +94,4 @@ body:
       description: Links to vulnerability details, blog posts, etc.
       placeholder: |
         - https://nvd.nist.gov/vuln/detail/CVE-XXXX-XXXX
-        - https://yourdomain.local/security-advisory
+        - https://kuro-toji.local/security-advisory

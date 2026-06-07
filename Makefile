@@ -31,7 +31,7 @@ run-admin:
 
 # Build Docker image
 docker-build:
-	docker build -t ghcr.io/username/waf:latest .
+	docker build -t ghcr.io/kuro-toji/waf:latest .
 
 # Start all services with docker-compose
 docker-up:

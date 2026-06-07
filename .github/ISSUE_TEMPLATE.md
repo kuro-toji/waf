@@ -47,7 +47,7 @@ Add any other context or screenshots about the feature request here.
 
 **Do not report security vulnerabilities through public GitHub issues.**
 
-Please email security@yourdomain.local with:
+Please email security@kuro-toji.local with:
 - Description of the vulnerability
 - Steps to reproduce
 - Potential impact

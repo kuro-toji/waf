@@ -33,7 +33,7 @@ WAF is fully open-source, self-hosted, and you control everything.
 
 **Docker (Recommended):**
 ```bash
-git clone https://github.com/username/waf.git
+git clone https://github.com/kuro-toji/waf.git
 cd waf
 docker-compose up -d
 ```

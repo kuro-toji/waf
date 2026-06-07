@@ -6,7 +6,7 @@ Get WAF running in 5 minutes.
 
 ```bash
 # Clone and start
-git clone https://github.com/username/waf.git
+git clone https://github.com/kuro-toji/waf.git
 cd waf
 
 # Start all services

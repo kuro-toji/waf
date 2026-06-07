@@ -35,5 +35,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Rate limiting
 - Admin API
 
-[Unreleased]: https://github.com/username/waf/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/username/waf/releases/tag/v0.1.0
+[Unreleased]: https://github.com/kuro-toji/waf/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/kuro-toji/waf/releases/tag/v0.1.0

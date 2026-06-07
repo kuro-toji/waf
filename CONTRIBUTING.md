@@ -81,7 +81,7 @@ Closes #123
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 # Clone repository
-git clone https://github.com/username/waf.git
+git clone https://github.com/kuro-toji/waf.git
 cd waf
 
 # Build

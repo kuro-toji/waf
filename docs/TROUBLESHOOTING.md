@@ -120,7 +120,7 @@ docker-compose logs | grep "attack" | awk '{print $NF}' | sort | uniq -c
 ## Getting Help
 
 1. Check FAQ: `docs/FAQ.md`
-2. Search existing issues: `github.com/username/waf/issues`
+2. Search existing issues: `github.com/kuro-toji/waf/issues`
 3. Create new issue with debug info:
 
 ```bash

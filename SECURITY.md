@@ -5,7 +5,7 @@
 If you discover a security vulnerability, please report it responsibly:
 
 1. **DO NOT** create a public GitHub issue for security vulnerabilities
-2. Send an email to security@yourdomain.local with:
+2. Send an email to security@kuro-toji.local with:
    - Description of the vulnerability
    - Steps to reproduce
    - Potential impact

@@ -6,8 +6,8 @@
 
 [Rust](https://www.rust-lang.org/) • [Async I/O](https://tokio.rs/) • [OWASP Top 10](https://owasp.org/Top10/) • [Prometheus](https://prometheus.io/) • [Grafana](https://grafana.com/)
 
-[![build](https://github.com/username/waf/actions/workflows/build.yml/badge.svg)](https://github.com/username/waf/actions/workflows/build.yml)
-[![clippy](https://github.com/username/waf/actions/workflows/lint.yml/badge.svg)](https://github.com/username/waf/actions/workflows/build.yml)
+[![build](https://github.com/kuro-toji/waf/actions/workflows/build.yml/badge.svg)](https://github.com/kuro-toji/waf/actions/workflows/build.yml)
+[![clippy](https://github.com/kuro-toji/waf/actions/workflows/lint.yml/badge.svg)](https://github.com/kuro-toji/waf/actions/workflows/lint.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 </div>
@@ -120,7 +120,7 @@ WAF is an open-source Web Application Firewall designed for teams who want visib
 ### Docker Compose (Recommended)
 
 ```bash
-git clone https://github.com/username/waf.git
+git clone https://github.com/kuro-toji/waf.git
 cd waf
 
 # Start WAF with Prometheus, Grafana, and Redis
