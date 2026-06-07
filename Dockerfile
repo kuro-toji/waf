@@ -1,5 +1,5 @@
 # Build stage
-FROM rust:1.75-slim as builder
+FROM rust:1.75-slim AS builder
 
 WORKDIR /app
 
@@ -13,7 +13,13 @@ RUN apt-get update && apt-get install -y \
 COPY Cargo.toml Cargo.lock* ./
 
 # Create dummy source for dependency caching
-RUN mkdir -p src && \
+RUN mkdir -p src \
+        waf-common/src \
+        waf-engine/src \
+        waf-rate-limiter/src \
+        waf-bot-detector/src \
+        waf-core/src \
+        waf-admin/src && \
     echo "fn main() {}" > src/main.rs && \
     echo "fn main() {}" > waf-common/src/lib.rs && \
     echo "fn main() {}" > waf-engine/src/lib.rs && \
