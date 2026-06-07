@@ -1,5 +1,12 @@
 # Build stage
-FROM rust:1.75-slim AS builder
+# Use a current stable Rust. The previous pin (1.75) shipped cargo
+# 1.75, which cannot parse lock file version 4 — Cargo.lock is
+# written by the developer's local cargo (>=1.78) and would fail
+# to build with 'lock file version 4 was found, but this version
+# of Cargo does not understand this lock file'. 1.83 covers every
+# edition 2024 feature the workspace uses; bump as the toolchain
+# moves.
+FROM rust:1.83-slim AS builder
 
 WORKDIR /app
 
