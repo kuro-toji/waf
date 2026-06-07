@@ -9,8 +9,16 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy workspace files
+# Copy workspace manifests. We need the per-crate Cargo.toml files
+# in place before the dummy build so cargo can resolve the workspace
+# members and cache their dependency graphs.
 COPY Cargo.toml Cargo.lock* ./
+COPY waf-common/Cargo.toml        waf-common/Cargo.toml
+COPY waf-engine/Cargo.toml        waf-engine/Cargo.toml
+COPY waf-rate-limiter/Cargo.toml  waf-rate-limiter/Cargo.toml
+COPY waf-bot-detector/Cargo.toml  waf-bot-detector/Cargo.toml
+COPY waf-core/Cargo.toml          waf-core/Cargo.toml
+COPY waf-admin/Cargo.toml         waf-admin/Cargo.toml
 
 # Create dummy source for dependency caching
 RUN mkdir -p src \
