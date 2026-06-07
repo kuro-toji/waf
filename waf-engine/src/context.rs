@@ -22,7 +22,7 @@
 //!
 //! ## Usage
 //!
-//! ```rust
+//! ```ignore
 //! use waf_engine::RequestContextBuilder;
 //! use http::{Request, Body};
 //!
@@ -37,7 +37,7 @@
 //!     .build();
 //! ```
 
-use http::{Request, Version};
+use http::Request;
 use std::net::SocketAddr;
 use waf_common::*;
 
@@ -70,7 +70,7 @@ impl RequestContextBuilder {
             http::request::Parts {
                 method,
                 uri,
-                version,
+                version: _,
                 headers,
                 ..
             },

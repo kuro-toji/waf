@@ -82,6 +82,12 @@ struct BotPattern {
     name: &'static str,
 }
 
+impl Default for FingerprintCollector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FingerprintCollector {
     /// Create a new fingerprint collector
     pub fn new() -> Self {
@@ -168,28 +174,25 @@ impl FingerprintCollector {
 
     /// Collect fingerprint from headers
     pub fn collect(&self, headers: &HeaderMap) -> ClientFingerprint {
-        let mut fp = ClientFingerprint::default();
-
-        // Collect headers
-        fp.user_agent = headers
-            .get("user-agent")
-            .and_then(|v| v.to_str().ok())
-            .map(|s| s.to_string());
-
-        fp.accept_language = headers
-            .get("accept-language")
-            .and_then(|v| v.to_str().ok())
-            .map(|s| s.to_string());
-
-        fp.accept_encoding = headers
-            .get("accept-encoding")
-            .and_then(|v| v.to_str().ok())
-            .map(|s| s.to_string());
-
-        fp.accept = headers
-            .get("accept")
-            .and_then(|v| v.to_str().ok())
-            .map(|s| s.to_string());
+        let mut fp = ClientFingerprint {
+            user_agent: headers
+                .get("user-agent")
+                .and_then(|v| v.to_str().ok())
+                .map(|s| s.to_string()),
+            accept_language: headers
+                .get("accept-language")
+                .and_then(|v| v.to_str().ok())
+                .map(|s| s.to_string()),
+            accept_encoding: headers
+                .get("accept-encoding")
+                .and_then(|v| v.to_str().ok())
+                .map(|s| s.to_string()),
+            accept: headers
+                .get("accept")
+                .and_then(|v| v.to_str().ok())
+                .map(|s| s.to_string()),
+            ..ClientFingerprint::default()
+        };
 
         // Check for known bots
         if let Some(ua) = &fp.user_agent {

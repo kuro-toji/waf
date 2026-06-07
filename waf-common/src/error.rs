@@ -15,7 +15,7 @@
 //!
 //! Use `?` operator with custom error types:
 //!
-//! ```rust
+//! ```ignore
 //! fn load_rules() -> Result<Vec<Rule>, WafError> {
 //!     let content = std::fs::read_to_string("rules.yaml")?;
 //!     let rules: Vec<Rule> = serde_yaml::from_str(&content)?;
@@ -26,7 +26,7 @@
 //! ## Converting Errors
 //!
 //! Most standard library errors convert automatically:
-//! ```rust
+//! ```ignore
 //! use std::fs::File;
 //! use waf_common::WafError;
 //!

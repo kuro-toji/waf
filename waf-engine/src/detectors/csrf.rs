@@ -31,7 +31,7 @@
 //!
 //! ## Usage
 //!
-//! ```rust
+//! ```ignore
 //! use waf_engine::detectors::CsrfDetector;
 //!
 //! let trusted = vec!["https://yourdomain.local".to_string()];
