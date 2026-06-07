@@ -48,7 +48,6 @@
 //! ```
 
 use regex::Regex;
-use waf_common::*;
 
 /// XXE detection result
 #[derive(Debug, Clone)]
@@ -68,17 +67,13 @@ impl XxeDetector {
     /// Create a new XXE detector
     pub fn new() -> Self {
         let patterns = vec![
-            // DOCTYPE declaration
+            // More specific patterns first so they aren't shadowed by
+            // the generic DOCTYPE / ENTITY matches below.
+            // PHP wrapper
             (
-                Regex::new(r"(?i)<!DOCTYPE\s+[^>]*>").unwrap(),
-                "doctype",
-                0.7,
-            ),
-            // ENTITY declaration
-            (
-                Regex::new(r"(?i)<!ENTITY\s+[^>]*>").unwrap(),
-                "entity_declaration",
-                0.85,
+                Regex::new(r"(?i)(php://|expect://|ogg://)").unwrap(),
+                "php_wrapper",
+                0.95,
             ),
             // External entity reference
             (
@@ -92,14 +87,20 @@ impl XxeDetector {
                 "external_entity_public",
                 0.9,
             ),
+            // ENTITY declaration
+            (
+                Regex::new(r"(?i)<!ENTITY\s+[^>]*>").unwrap(),
+                "entity_declaration",
+                0.85,
+            ),
+            // DOCTYPE declaration
+            (
+                Regex::new(r"(?i)<!DOCTYPE\s+[^>]*>").unwrap(),
+                "doctype",
+                0.7,
+            ),
             // File scheme in entity
             (Regex::new(r"(?i)file\s*://").unwrap(), "file_scheme", 0.8),
-            // PHP wrapper
-            (
-                Regex::new(r"(?i)(php://|expect://|ogg://)").unwrap(),
-                "php_wrapper",
-                0.95,
-            ),
             // HTTP scheme in entity
             (Regex::new(r"(?i)http\s*://").unwrap(), "http_scheme", 0.7),
             // Parameter entity

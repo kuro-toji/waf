@@ -41,7 +41,6 @@
 //! ```
 
 use regex::Regex;
-use waf_common::*;
 
 /// XSS detection result
 #[derive(Debug, Clone)]
@@ -111,18 +110,20 @@ impl XssDetector {
         ];
 
         let event_handlers = vec![
-            // Common event handlers
-            (
-                Regex::new(r"(?i)\bon\w+\s*=").unwrap(),
-                "event_handler",
-                0.85,
-            ),
-            // Specific high-risk event handlers
+            // Specific high-risk event handlers (must come before the generic
+            // event_handler pattern so that onerror/onload are tagged with the
+            // more specific "high_risk_event" label).
             (
                 Regex::new(r"(?i)\bon(error|load|click|mouse\w+|key\w+|focus|blur|submit)\s*=")
                     .unwrap(),
                 "high_risk_event",
                 0.9,
+            ),
+            // Common event handlers
+            (
+                Regex::new(r"(?i)\bon\w+\s*=").unwrap(),
+                "event_handler",
+                0.85,
             ),
             // Expression in CSS
             (
@@ -148,7 +149,7 @@ impl XssDetector {
             // href with javascript
             (
                 Regex::new(r#"(?i)href\s*=\s*['"]?\s*javascript\s*:"#).unwrap(),
-                "xss_href_js",
+                "href_js",
                 0.9,
             ),
             // src=javascript:
@@ -183,6 +184,22 @@ impl XssDetector {
 
     /// Detect XSS in input string
     pub fn detect(&self, input: &str) -> XssResult {
+        // Check attribute patterns first — they are more specific
+        // (e.g. `href='javascript:...'` is more precisely "href_js" than
+        // the generic "javascript_uri"). If we checked script_patterns
+        // first, the generic `javascript:` pattern would swallow the match.
+        for (regex, pattern_name, confidence) in &self.attribute_patterns {
+            if let Some(m) = regex.find(input) {
+                return XssResult {
+                    detected: true,
+                    pattern: pattern_name.to_string(),
+                    matched_value: m.as_str().to_string(),
+                    confidence: *confidence,
+                    context: self.determine_context(input, m.start()),
+                };
+            }
+        }
+
         // Check script patterns
         for (regex, pattern_name, confidence) in &self.script_patterns {
             if let Some(m) = regex.find(input) {
@@ -198,19 +215,6 @@ impl XssDetector {
 
         // Check event handlers
         for (regex, pattern_name, confidence) in &self.event_handlers {
-            if let Some(m) = regex.find(input) {
-                return XssResult {
-                    detected: true,
-                    pattern: pattern_name.to_string(),
-                    matched_value: m.as_str().to_string(),
-                    confidence: *confidence,
-                    context: self.determine_context(input, m.start()),
-                };
-            }
-        }
-
-        // Check attribute patterns
-        for (regex, pattern_name, confidence) in &self.attribute_patterns {
             if let Some(m) = regex.find(input) {
                 return XssResult {
                     detected: true,
@@ -245,15 +249,31 @@ impl XssDetector {
     /// Determine the XSS context
     fn determine_context(&self, input: &str, match_start: usize) -> XssContext {
         let before = &input[..match_start];
+        // Look at the match itself too — a match at position 0 has no
+        // "before", but the matched text often tells us the context
+        // (e.g. `<script>` at offset 0 is the opening tag, which is
+        // Html context; the Javascript context is the code *inside*
+        // the tag).
+        let match_text = input[match_start..]
+            .chars()
+            .take(16)
+            .collect::<String>();
+        let match_lower = match_text.to_lowercase();
 
         // Check what's before the match
-        if before.contains("<script") || before.contains("javascript:") {
+        if before.contains("<script") {
+            // We're inside a <script> block — the match is code, not a tag.
             XssContext::Javascript
         } else if before.contains("<style") || before.contains("style=") {
             XssContext::Css
-        } else if before.contains("<svg") || before.contains("<xml") || before.contains("<") {
+        } else if before.contains("<svg") || before.contains("<xml")
+            || before.contains('<')
+            || match_lower.starts_with("<script")
+            || match_lower.starts_with("<svg")
+            || match_text.starts_with('<')
+        {
             XssContext::Html
-        } else if before.contains("=") || before.contains("on") {
+        } else if before.contains('=') || before.contains("on") {
             XssContext::Attribute
         } else if before.contains("url(") || before.contains("href") {
             XssContext::Url

@@ -45,7 +45,6 @@
 //! ```
 
 use regex::Regex;
-use waf_common::*;
 
 /// RFI detection result
 #[derive(Debug, Clone)]
@@ -67,23 +66,23 @@ impl RfiDetector {
     /// Create a new RFI detector
     pub fn new() -> Self {
         let patterns = vec![
-            // HTTP/HTTPS URL patterns
-            (
-                Regex::new(r#"(?i)https?://[^\s'"]+"#).unwrap(),
-                "http_url",
-                0.8,
-            ),
-            // PHP wrappers
+            // PHP wrappers (most specific — checked first)
             (
                 Regex::new(r"(?i)(php://|expect://|ogg://|zip://|data://|glob://)").unwrap(),
                 "php_wrapper",
                 0.95,
             ),
-            // Common RFI patterns
+            // Common RFI patterns (specific parameter=URL combos)
             (
                 Regex::new(r"(?i)(page=|file=|path=|url=|template=|img=)[^&]*https?://").unwrap(),
                 "rfi_param",
                 0.95,
+            ),
+            // HTTP/HTTPS URL patterns (generic, checked last)
+            (
+                Regex::new(r#"(?i)https?://[^\s'"]+"#).unwrap(),
+                "http_url",
+                0.8,
             ),
             // Encoded URLs
             (

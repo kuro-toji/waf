@@ -37,7 +37,6 @@
 //! ```
 
 use regex::Regex;
-use waf_common::*;
 
 /// Path traversal detection result
 #[derive(Debug, Clone)]
@@ -71,14 +70,15 @@ impl PathTraversalDetector {
                 "double_encoded_traversal",
                 0.95,
             ),
-            // Null byte injection
-            (Regex::new(r"\x00").unwrap(), "null_byte", 0.85),
-            // Path with null byte
+            // Path with null byte (more specific — must come before the
+            // generic null_byte pattern below).
             (
                 Regex::new(r"(?i)\.(?:jpg|gif|png|pdf)\x00").unwrap(),
                 "null_byte_extension",
                 0.8,
             ),
+            // Null byte injection
+            (Regex::new(r"\x00").unwrap(), "null_byte", 0.85),
             // Common traversal patterns
             (
                 Regex::new(r"(?i)(etc|passwd|shadow|windows|system32|boot\.ini)").unwrap(),
