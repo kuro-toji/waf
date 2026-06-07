@@ -101,20 +101,17 @@ impl From<&str> for HttpMethod {
 }
 
 /// Attack severity levels
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Default,
+)]
 #[serde(rename_all = "lowercase")]
 pub enum Severity {
+    #[default]
     Info = 0,
     Low = 1,
     Medium = 2,
     High = 3,
     Critical = 4,
-}
-
-impl Default for Severity {
-    fn default() -> Self {
-        Severity::Info
-    }
 }
 
 impl Severity {
@@ -174,7 +171,7 @@ impl Sensitivity {
     }
 
     /// Create a Sensitivity from a string (for config parsing)
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn parse(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
             "low" => Some(Sensitivity::Low),
             "medium" => Some(Sensitivity::Medium),
@@ -237,7 +234,7 @@ impl Default for ScoringConfig {
             attack_multipliers: HashMap::new(), // No multipliers by default
             max_score: 100,
             score_exempt_rules: Vec::new(),
-            short_circuit_critical: true,
+            short_circuit_critical: false,
         }
     }
 }
@@ -362,7 +359,9 @@ impl AttackScore {
             // Calculate base score from severity
             let base_score = config.severity_weight(rule.severity);
 
-            // Find attack type from tags
+            // Find attack type from tags. A rule may carry several tags;
+            // the first one that has a configured multiplier wins, but every
+            // tag is recorded in the audit trail for visibility.
             let attack_type = rule
                 .tags
                 .iter()
@@ -381,10 +380,10 @@ impl AttackScore {
             total += weighted_score;
             *by_severity.entry(rule.severity).or_insert(0) += weighted_score;
 
-            // Track attack types
-            if let Some(ref at) = attack_type {
-                if !attack_types.contains(at) {
-                    attack_types.push(at.clone());
+            // Track every tag as an attack type for the audit trail.
+            for tag in &rule.tags {
+                if !attack_types.contains(tag) {
+                    attack_types.push(tag.clone());
                 }
             }
 
@@ -447,7 +446,7 @@ impl AttackScore {
 
 /// WAF action to take on a request
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(tag = "type", content = "details")]
+#[serde(tag = "type", rename_all = "lowercase")]
 pub enum Action {
     /// Allow the request to proceed
     Allow,
@@ -477,21 +476,16 @@ pub enum Action {
 }
 
 /// Challenge types for bot detection
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum ChallengeType {
     /// JavaScript challenge that browser must solve
+    #[default]
     Javascript,
     /// CAPTCHA challenge
     Captcha,
     /// Rate limit challenge
     RateLimit,
-}
-
-impl Default for ChallengeType {
-    fn default() -> Self {
-        ChallengeType::Javascript
-    }
 }
 
 /// Match type for rule conditions

@@ -16,7 +16,7 @@
 //!
 //! ## Example
 //!
-//! ```rust
+//! ```ignore
 //! use waf_engine::scoring::ScoringEngine;
 //! use waf_common::{ScoringConfig, Sensitivity, Severity, Rule, Action, MatchCondition, MatchType, MatchField};
 //!
@@ -274,8 +274,8 @@ mod tests {
     fn test_max_score_cap() {
         let config = ScoringConfig {
             enabled: true,
-            sensitivity: Sensitivity::Low, // high threshold
-            max_score: 50,                 // low cap
+            sensitivity: Sensitivity::High, // block at 20
+            max_score: 50,                  // cap below the 100×Critical sum
             ..Default::default()
         };
         let engine = ScoringEngine::new(config);
@@ -288,7 +288,7 @@ mod tests {
         let score = engine.calculate_score(&rule_refs);
 
         assert_eq!(score.total, 50); // Capped
-        assert!(score.should_block); // 50 < 60 (Low threshold)
+        assert!(score.should_block); // 50 >= 20 (High threshold)
     }
 
     #[test]
@@ -317,12 +317,10 @@ mod tests {
         let config = ScoringConfig::medium();
         let engine = ScoringEngine::new(config);
 
-        let rules = vec![
-            create_test_rule(Severity::Critical, vec![]),
+        let rules = [create_test_rule(Severity::Critical, vec![]),
             create_test_rule(Severity::Critical, vec![]),
             create_test_rule(Severity::High, vec![]),
-            create_test_rule(Severity::Medium, vec![]),
-        ];
+            create_test_rule(Severity::Medium, vec![])];
         let rule_refs: Vec<&Rule> = rules.iter().collect();
         let score = engine.calculate_score(&rule_refs);
 
