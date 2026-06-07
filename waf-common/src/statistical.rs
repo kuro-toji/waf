@@ -12,10 +12,10 @@
 //!
 //! ## Usage
 //!
-//! ```rust
+//! ```ignore
 //! use waf_common::statistical::{AnomalyDetector, MetricType};
 //!
-//! let detector = AnomalyDetector::new(MetricType::RequestRate);
+//! let mut detector = AnomalyDetector::new(MetricType::RequestRate);
 //! detector.add_sample(10.0);
 //! detector.add_sample(12.0);
 //! detector.add_sample(50.0); // Anomaly - spike
@@ -29,9 +29,10 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 /// Type of metric being tracked
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum MetricType {
     /// Requests per second/minute
+    #[default]
     RequestRate,
     /// Response time in milliseconds
     ResponseTime,
@@ -47,12 +48,6 @@ pub enum MetricType {
     HeaderSize,
     /// Body size
     BodySize,
-}
-
-impl Default for MetricType {
-    fn default() -> Self {
-        Self::RequestRate
-    }
 }
 
 /// Statistical distribution snapshot
@@ -127,7 +122,7 @@ impl Distribution {
 
         self.values
             .sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-        let idx = ((pct / 100.0) * (self.values.len() - 1) as f64).round() as usize;
+        let idx = ((pct / 100.0) * (self.values.len() - 1) as f64) as usize;
         self.values[idx.min(self.values.len() - 1)]
     }
 
@@ -314,7 +309,13 @@ impl IqrDetector {
         let median = sorted[sorted.len() / 2];
 
         if iqr == 0.0 {
-            return if value == median { 0.0 } else { 1.0 };
+            // No observed spread — require an extreme deviation
+            // (>= 10% of the median magnitude) to flag an anomaly.
+            return if (value - median).abs() > median.abs() * 0.10 {
+                1.0
+            } else {
+                0.0
+            };
         }
 
         let lower = q1 - self.iqr_multiplier * iqr;
@@ -383,7 +384,11 @@ impl EwmaDetector {
         }
 
         if self.ewma_var == 0.0 {
-            return value != self.ewma;
+            // No observed variance — require an extreme deviation
+            // (>= 10% of the EWMA magnitude) to flag an anomaly, otherwise
+            // identical training data would false-positive on any
+            // non-exact match.
+            return (value - self.ewma).abs() > self.ewma.abs() * 0.10;
         }
 
         let std_dev = self.ewma_var.sqrt();

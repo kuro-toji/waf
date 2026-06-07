@@ -66,7 +66,11 @@ impl LeakyBucket {
     pub fn try_add(&mut self) -> bool {
         self.leak();
 
-        if self.level < self.capacity as f64 {
+        // Check whether the *new* level (current + 1) still fits, not
+        // just the current level. Without this, a tiny amount of leak
+        // between the last add and this one can drop the level just
+        // below capacity and let an over-capacity add slip through.
+        if self.level + 1.0 <= self.capacity as f64 {
             self.level += 1.0;
             true
         } else {

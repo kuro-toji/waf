@@ -43,7 +43,9 @@ pub struct IpReputation {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Default)]
 pub enum ReputationCategory {
+    #[default]
     Clean,
     Suspicious,
     Malicious,
@@ -53,11 +55,6 @@ pub enum ReputationCategory {
     Bot,
 }
 
-impl Default for ReputationCategory {
-    fn default() -> Self {
-        ReputationCategory::Clean
-    }
-}
 
 /// IP reputation database
 pub struct ReputationDatabase {
@@ -97,11 +94,14 @@ impl ReputationDatabase {
         entries.get(ip).cloned()
     }
 
-    /// Check if IP is a known TOR node
+    /// Check if IP is a known TOR node.
+    ///
+    /// The stored list contains exact IPs only. We do not do CIDR-style
+    /// prefix matching here on purpose — a "192.168.1.100" entry must not
+    /// cause "192.168.1.1" to be reported as a TOR node.
     pub fn is_tor_node(&self, ip: &str) -> bool {
         let tor = self.tor_nodes.read().unwrap();
-        tor.iter()
-            .any(|node| ip == node || ip.starts_with(&node[..node.rfind('.').unwrap_or(0)]))
+        tor.iter().any(|node| node == ip)
     }
 
     /// Add TOR exit node
@@ -162,7 +162,7 @@ impl ReputationDatabase {
     pub fn get_top_attackers(&self, limit: usize) -> Vec<IpReputation> {
         let entries = self.entries.read().unwrap();
         let mut sorted: Vec<_> = entries.values().collect();
-        sorted.sort_by(|a, b| b.attack_count.cmp(&a.attack_count));
+        sorted.sort_by_key(|a| std::cmp::Reverse(a.attack_count));
         sorted.into_iter().take(limit).cloned().collect()
     }
 
