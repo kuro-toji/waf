@@ -1,12 +1,12 @@
 # Build stage
-# Use a current stable Rust. The previous pin (1.75) shipped cargo
-# 1.75, which cannot parse lock file version 4 — Cargo.lock is
-# written by the developer's local cargo (>=1.78) and would fail
-# to build with 'lock file version 4 was found, but this version
-# of Cargo does not understand this lock file'. 1.83 covers every
-# edition 2024 feature the workspace uses; bump as the toolchain
-# moves.
-FROM rust:1.83-slim AS builder
+# Use a current stable Rust. The previous pins (1.75 → 1.83) hit
+# two problems: cargo 1.75 cannot parse lock file version 4, and
+# cargo 1.83 cannot parse manifests using edition = "2024"
+# (required by some transitive deps in our lock). 1.85 is the
+# first release with both, and edition 2024 is the highest
+# edition any dep in the lock declares today. Bump as the
+# toolchain moves.
+FROM rust:1.85-slim AS builder
 
 WORKDIR /app
 
