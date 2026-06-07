@@ -34,14 +34,16 @@
 //! ```
 
 use prometheus::{
-    Counter, Histogram, Gauge, Opts, Registry, TextEncoder,
+    Counter, Histogram, Gauge, Opts, Registry, TextEncoder, Encoder
 };
 use std::sync::OnceLock;
+use once_cell::sync::Lazy;
+use tokio::io::AsyncWriteExt;
 
 static REGISTRY: OnceLock<Registry> = OnceLock::new();
 
 /// Request counter
-static WAF_REQUESTS_TOTAL: once_cell::sync::Lazy<Counter> = once_cell::sync::Lazy::new(|| {
+static WAF_REQUESTS_TOTAL: Lazy<Counter> = Lazy::new(|| {
     Counter::with_opts(Opts::new("waf_requests_total", "Total requests processed"))
         .unwrap()
 });
@@ -124,7 +126,7 @@ pub fn record_latency(seconds: f64) {
 
 /// Record an attack
 pub fn record_attack(attack_type: &str) {
-    WAF_ATTACKS_TOTAL.with_label_values(&[attack_type]).inc();
+    WAF_ATTACKS_TOTAL.inc();
 }
 
 /// Record rate limit exceeded
@@ -146,9 +148,9 @@ pub fn set_active_connections(count: f64) {
 pub fn gather_metrics() -> String {
     let encoder = TextEncoder::new();
     let metric_families = get_registry().gather();
-    let mut output = String::new();
+    let mut output = Vec::new();
     encoder.encode(&metric_families, &mut output).ok();
-    output
+    String::from_utf8(output).unwrap_or_default()
 }
 
 /// Start metrics server

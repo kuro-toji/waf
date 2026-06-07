@@ -359,7 +359,7 @@ impl RuleMatcher {
 }
 
 /// Extract a specific cookie value by name
-fn extract_cookie(cookie_header: &str, name: &str) -> Option<&str> {
+fn extract_cookie<'a>(cookie_header: &'a str, name: &str) -> Option<&'a str> {
     cookie_header
         .split(';')
         .find_map(|pair| {
@@ -374,14 +374,15 @@ fn extract_cookie(cookie_header: &str, name: &str) -> Option<&str> {
 }
 
 /// Extract a value from JSON body
-fn extract_json_value(body: &str, key: &str) -> Option<&str> {
+fn extract_json_value<'a>(body: &'a str, key: &str) -> Option<&'a str> {
     // Simple JSON extraction (not a full parser)
     let search = format!("\"{}\"", key);
     if let Some(start) = body.find(&search) {
-        if let SomeColon) = body[..start].rfind(':') {
-            let after_colon = &body[after_colon..];
+        let after_key = &body[start + search.len()..];
+        if let Some(colon) = after_key.find(':') {
+            let after_colon = &after_key[colon + 1..];
             if let Some(end) = after_colon.find(',').or_else(|| after_colon.find('}')) {
-                let value = &after_colon[1..end].trim();
+                let value = after_colon[..end].trim();
                 if value.starts_with('"') && value.ends_with('"') {
                     return Some(&value[1..value.len()-1]);
                 }
@@ -393,11 +394,11 @@ fn extract_json_value(body: &str, key: &str) -> Option<&str> {
 }
 
 /// Extract a value from form data
-fn extract_form_value(body: &str, field: &str) -> Option<&str> {
+fn extract_form_value<'a>(body: &'a str, field: &str) -> Option<&'a str> {
     for pair in body.split('&') {
         if let Some((k, v)) = pair.split_once('=') {
             if urlencoding_decode(k) == field {
-                return Some(&urlencoding_decode(v));
+                return Some(v);
             }
         }
     }

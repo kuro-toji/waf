@@ -94,7 +94,7 @@ impl SqlInjectionDetector {
             ),
             // OR-based injection (tautology)
             (
-                Regex::new(r"(?i)\b(or|and)\s+[\"']?\w+[\"']?\s*(=|>|<)\s*[\"']?\w+[\"']?").unwrap(),
+                Regex::new(r#"(?i)\b(or|and)\s+["']?\w+["']?\s*(=|>|<)\s*["']?\w+["']?"#).unwrap(),
                 "or_condition",
                 0.85,
             ),
@@ -130,7 +130,7 @@ impl SqlInjectionDetector {
             ),
             // String termination attacks
             (
-                Regex::new(r"['\"].*['\"].*['\"]").unwrap(),
+                Regex::new(r#"['"].*['"].*['"]"#).unwrap(),
                 "string_termination",
                 0.5,
             ),

@@ -70,9 +70,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/logs", get(api::get_logs))
         .route("/api/config", get(api::get_config).put(api::update_config))
         .route("/health", get(api::health))
-        .layer(CorsLayer::permissive());
+        .layer(CorsLayer::permissive())
+        .with_state(state);
 
-    let addr = "127.0.0.1:8080".parse()?;
+    let addr: std::net::SocketAddr = "127.0.0.1:8080".parse().unwrap();
     tracing::info!("Admin API listening on {}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await?;

@@ -113,7 +113,7 @@ impl CommandInjectionDetector {
         for (regex, pattern_name, confidence) in &self.patterns {
             if let Some(m) = regex.find(input) {
                 // Special handling for certain patterns
-                if pattern_name == "pipe_operator" || pattern_name == "semicolon" {
+                if *pattern_name == "pipe_operator" || *pattern_name == "semicolon" {
                     // Check if it looks like shell command context
                     let trimmed = input.trim();
                     if trimmed.contains(' ') || trimmed.contains('/') {

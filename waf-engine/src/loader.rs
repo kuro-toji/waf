@@ -32,6 +32,7 @@
 //!
 
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
+use serde::Deserialize;
 use std::path::Path;
 use std::sync::mpsc::{channel, Receiver};
 use std::time::Duration;
@@ -69,7 +70,7 @@ impl RuleLoader {
     }
 
     /// Load rules from all configured files
-    pub fn load(&mut self) -> Result<Vec<Rule>, WafError> {
+    pub fn load(&mut self) -> Result<Vec<Rule>> {
         self.rules.clear();
 
         for file_path in &self.rule_files {
@@ -81,7 +82,7 @@ impl RuleLoader {
     }
 
     /// Load rules from a single file
-    fn load_file(&self, path: &str) -> Result<Vec<Rule>, WafError> {
+    fn load_file(&self, path: &str) -> Result<Vec<Rule>> {
         let path = Path::new(path);
 
         if !path.exists() {
@@ -124,7 +125,7 @@ impl RuleLoader {
     }
 
     /// Start watching for file changes
-    pub fn watch(&mut self) -> Result<Receiver<Result<Vec<Rule>, WafError>>, WafError> {
+    pub fn watch(&mut self) -> Result<Receiver<Result<Vec<Rule>>>> {
         let (tx, rx) = channel();
 
         let files = self.rule_files.clone();

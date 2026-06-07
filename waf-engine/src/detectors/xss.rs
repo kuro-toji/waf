@@ -146,13 +146,13 @@ impl XssDetector {
             ),
             // href with javascript
             (
-                Regex::new(r"(?i)href\s*=\s*['\"]?\s*javascript\s*:").unwrap(),
-                "href_js",
-                0.95,
-            ),
-            // src with javascript
-            (
-                Regex::new(r"(?i)src\s*=\s*['\"]?\s*javascript\s*:").unwrap(),
+                Regex::new(r#"(?i)href\s*=\s*['"]?\s*javascript\s*:"#).unwrap(),
+                "xss_href_js",
+                0.9,
+                ),
+                // src=javascript:
+                (
+                Regex::new(r#"(?i)src\s*=\s*['"]?\s*javascript\s*:"#).unwrap(),
                 "src_js",
                 0.95,
             ),
@@ -164,7 +164,7 @@ impl XssDetector {
             ),
             // meta refresh with javascript
             (
-                Regex::new(r"(?i)http-equiv\s*=\s*['\"]?refresh['\"]?[^>]*url\s*=").unwrap(),
+                Regex::new(r#"(?i)http-equiv\s*=\s*['"]?refresh['"]?[^>]*url\s*="#).unwrap(),
                 "meta_refresh",
                 0.8,
             ),

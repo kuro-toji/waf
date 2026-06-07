@@ -69,7 +69,7 @@ impl RfiDetector {
         let patterns = vec![
             // HTTP/HTTPS URL patterns
             (
-                Regex::new(r"(?i)https?://[^\s'\"]+").unwrap(),
+                Regex::new(r#"(?i)https?://[^\s'"]+"#).unwrap(),
                 "http_url",
                 0.8,
             ),
@@ -105,7 +105,7 @@ impl RfiDetector {
         for (regex, pattern_name, confidence) in &self.patterns {
             if let Some(m) = regex.find(input) {
                 // Check if URL is in allowed domains
-                if pattern_name == "http_url" || pattern_name == "rfi_param" {
+                if *pattern_name == "http_url" || *pattern_name == "rfi_param" {
                     if let Some(url) = self.extract_url(m.as_str()) {
                         if !self.is_allowed_domain(&url) {
                             return RfiResult {
@@ -153,7 +153,7 @@ impl RfiDetector {
             return false;
         }
         
-        url.contains(&self.allowed_domains.iter().find(|d| url.contains(*d)).unwrap_or(&""))
+        self.allowed_domains.iter().any(|d| url.contains(d))
     }
 
     /// Add allowed domain

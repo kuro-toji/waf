@@ -111,7 +111,7 @@ impl SlidingWindow {
     }
 
     /// Get rate limit info
-    pub fn get_info(&self) -> RateLimitInfo {
+    pub fn get_info(&mut self) -> RateLimitInfo {
         self.cleanup();
         RateLimitInfo {
             request_count: self.count(),

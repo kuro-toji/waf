@@ -105,7 +105,7 @@ async fn challenge_handler(
             timestamp: chrono::Utc::now(),
             tls: None,
             rate_limit_info: None,
-        });
+        }).await;
         
         Response::builder()
             .status(StatusCode::OK)
@@ -136,7 +136,7 @@ async fn proxy_handler(
 
 /// Start the server
 pub async fn start(state: AppState) -> Result<(), Box<dyn std::error::Error>> {
-    let addr = state.config.waf.listen_addr.parse()?;
+    let addr: std::net::SocketAddr = state.config.waf.listen_addr.parse()?;
     
     tracing::info!("WAF listening on {}", addr);
     

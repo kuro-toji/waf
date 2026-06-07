@@ -110,7 +110,7 @@ impl BotDetector {
         Self {
             fingerprint_collector: FingerprintCollector::new(),
             reputation_db: ReputationDatabase::new(),
-            challenge_generator: ChallengeGenerator::new(300),
+            challenge_generator: ChallengeGenerator::new(),
             config,
         }
     }
@@ -177,20 +177,29 @@ impl BotDetector {
     }
 
     /// Generate a challenge for a request
-    pub fn generate_challenge(&self, ctx: &RequestContext) -> String {
-        self.challenge_generator
-            .generate_js_challenge(&ctx.client_ip)
+    pub async fn generate_challenge(&self, ctx: &RequestContext) -> String {
+        let challenge_id = self.challenge_generator
+            .generate_challenge(&ctx.client_ip)
+            .await;
+        self.challenge_generator.generate_challenge_page(&challenge_id)
     }
 
     /// Validate a challenge response
-    pub fn validate_challenge(&self, challenge_id: &str, solution: &str) -> Result<bool, String> {
+    pub async fn validate_challenge(
+        &self,
+        client_ip: &str,
+        signals: crate::challenge::FingerprintSignals,
+        pow_nonce: u64,
+        challenge_id: &str,
+    ) -> std::result::Result<bool, waf_common::WafError> {
         self.challenge_generator
-            .validate_response(challenge_id, solution)
+            .validate_response(client_ip, signals, pow_nonce, challenge_id)
+            .await
     }
 
     /// Check if client passed challenge
-    pub fn is_challenge_passed(&self, client_ip: &str) -> bool {
-        self.challenge_generator.is_challenge_passed(client_ip)
+    pub async fn is_challenge_passed(&self, client_ip: &str) -> bool {
+        self.challenge_generator.has_valid_token(client_ip).await
     }
 
     /// Update IP reputation

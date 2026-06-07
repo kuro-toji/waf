@@ -35,7 +35,7 @@ use crate::AppState;
 pub async fn process_request(
     state: AppState,
     mut request: Request<Body>,
-) -> Result<Response<Body>, WafError> {
+) -> Result<Response<Body>> {
     let client_ip = extract_client_ip_from_request(&request, &state.config.waf.trusted_proxies);
     
     tracing::debug!("Processing request from {}: {} {}", 
@@ -79,18 +79,18 @@ pub async fn process_request(
         let mut manager = state.anomaly_manager.write().await;
         
         // Track request rate for this IP
-        manager.add_sample(MetricType::RequestRate, rate_limit_result.requests_in_window as f64);
+        manager.add_sample(MetricType::RequestRate, rate_limit_result.request_count as f64);
         
         // Track header size
         manager.add_sample(MetricType::HeaderSize, ctx.headers.len() as f64);
         
         // Track body size (if applicable)
-        if let Some(body_len) = ctx.body_length {
+        if let Some(body_len) = ctx.body.as_ref().map(|b| b.len()) {
             manager.add_sample(MetricType::BodySize, body_len as f64);
         }
         
         // Check for anomalies in these metrics
-        let request_rate_score = manager.get_score(MetricType::RequestRate, rate_limit_result.requests_in_window as f64);
+        let request_rate_score = manager.get_score(MetricType::RequestRate, rate_limit_result.request_count as f64);
         let header_score = manager.get_score(MetricType::HeaderSize, ctx.headers.len() as f64);
         
         let global_score = manager.get_global_score();
@@ -199,7 +199,7 @@ fn extract_client_ip_from_request(request: &Request<Body>, trusted_proxies: &[St
 async fn build_request_context(
     request: &mut Request<Body>,
     client_ip: String,
-) -> Result<RequestContext, WafError> {
+) -> Result<RequestContext> {
     let method = HttpMethod::from(request.method().as_str());
     let uri = request.uri().path().to_string();
     let query_string = request.uri().query().unwrap_or("").to_string();
@@ -216,8 +216,9 @@ async fn build_request_context(
         .and_then(|v| v.to_str().ok())
         .map(|s| s.to_string());
 
-    let body = hyper::body::to_bytes(request.body_mut()).await.ok();
-    let body_vec = body.map(|b| b.to_vec());
+    let body = std::mem::take(request.body_mut());
+    let body_bytes = axum::body::to_bytes(body, 10 * 1024 * 1024).await.ok();
+    let body_vec = body_bytes.map(|b| b.to_vec());
 
     Ok(RequestContext {
         id: uuid::Uuid::new_v4().to_string(),
@@ -265,14 +266,14 @@ async fn forward_to_upstream(
     state: &AppState,
     mut request: Request<Body>,
     _ctx: &RequestContext,
-) -> Result<Response<Body>, WafError> {
+) -> Result<Response<Body>> {
     let upstream_addr = &state.config.waf.upstream_addr;
     
     // Build upstream URI
     let upstream_uri = format!("http://{}{}", upstream_addr, request.uri());
     
     let client = hyper_util::client::legacy::Client::builder(
-        tokio::net::TcpStream::connect(upstream_addr).await?,
+        hyper_util::rt::TokioExecutor::new()
     ).build_http();
 
     // Create new request to upstream

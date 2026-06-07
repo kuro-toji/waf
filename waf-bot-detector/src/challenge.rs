@@ -27,6 +27,7 @@ use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use waf_common::WafError;
 
 /// Challenge token issued to verified browsers
 #[derive(Debug, Clone)]
@@ -460,13 +461,13 @@ impl ChallengeGenerator {
         signals: FingerprintSignals,
         pow_nonce: u64,
         challenge_id: &str,
-    ) -> Result<bool, WafError> {
+    ) -> std::result::Result<bool, waf_common::WafError> {
         // Find the challenge for this client
         let mut challenges = self.challenges.write().await;
         
         let token = challenges
             .get_mut(client_ip)
-            .ok_or(WafError::ChallengeError("No challenge found".to_string()))?;
+            .ok_or(WafError::ChallengeFailed("No challenge found".to_string()))?;
 
         // Check challenge hasn't expired
         if token.is_expired() {
@@ -483,7 +484,6 @@ impl ChallengeGenerator {
 
         // Update token
         token.fingerprint_score = fingerprint_score;
-        token.pow_valid = pow_valid;
 
         if pow_valid {
             token.mark_solved();
@@ -500,10 +500,11 @@ impl ChallengeGenerator {
         // Simple verification - check hash has required leading zeros
         let data = format!("{}:{}", challenge_id, nonce);
         let hash = Sha256::digest(data.as_bytes());
-        let hash_str = format!("{:x}", hash);
+        let hash_str = hash.iter().map(|b| format!("{:02x}", b)).collect::<String>();
         
         let required_zeros = (self.pow_difficulty + 3) / 4; // Convert bits to hex chars
-        hash_str[..required_zeros.min(hash_str.len())].chars()
+        let end_idx = (required_zeros as usize).min(hash_str.len());
+        hash_str[..end_idx].chars()
             .all(|c| c == '0')
     }
 

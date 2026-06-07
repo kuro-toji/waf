@@ -85,7 +85,7 @@ impl LeakyBucket {
     }
 
     /// Get current bucket level
-    pub fn level(&self) -> f64 {
+    pub fn level(&mut self) -> f64 {
         self.leak();
         self.level
     }
@@ -97,7 +97,7 @@ impl LeakyBucket {
     }
 
     /// Get rate limit info
-    pub fn get_info(&self) -> RateLimitInfo {
+    pub fn get_info(&mut self) -> RateLimitInfo {
         RateLimitInfo {
             request_count: self.level as u64,
             limit: self.capacity,

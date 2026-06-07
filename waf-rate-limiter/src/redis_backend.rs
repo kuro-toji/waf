@@ -33,6 +33,7 @@ use redis::{AsyncCommands, Client};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use waf_common::*;
+use crate::TokenBucketState;
 
 const RATE_LIMIT_PREFIX: &str = "waf:ratelimit:";
 
@@ -44,7 +45,7 @@ pub struct RedisRateLimiter {
 
 impl RedisRateLimiter {
     /// Create a new Redis rate limiter
-    pub async fn new(redis_url: &str) -> Result<Self, WafError> {
+    pub async fn new(redis_url: &str) -> Result<Self> {
         let client = Client::open(redis_url)
             .map_err(|e| WafError::Redis(format!("Failed to connect: {}", e)))?;
         
@@ -53,7 +54,7 @@ impl RedisRateLimiter {
             .map_err(|e| WafError::Redis(format!("Failed to get connection: {}", e)))?;
         
         redis::cmd("PING")
-            .query_async::<String>(&mut conn)
+            .query_async::<_, String>(&mut conn)
             .await
             .map_err(|e| WafError::Redis(format!("Failed to ping: {}", e)))?;
         
@@ -69,7 +70,7 @@ impl RedisRateLimiter {
         key: &str,
         limit: u64,
         window_seconds: u64,
-    ) -> Result<RateLimitInfo, WafError> {
+    ) -> Result<RateLimitInfo> {
         let mut conn = self.client.get_multiplexed_async_connection().await?;
         let redis_key = format!("{}{}", RATE_LIMIT_PREFIX, key);
         
@@ -129,7 +130,7 @@ impl RedisRateLimiter {
         key: &str,
         capacity: u64,
         refill_rate: f64,
-    ) -> Result<RateLimitInfo, WafError> {
+    ) -> Result<RateLimitInfo> {
         let mut conn = self.client.get_multiplexed_async_connection().await?;
         let redis_key = format!("{}{}", RATE_LIMIT_PREFIX, key);
         
@@ -193,11 +194,11 @@ impl RedisRateLimiter {
     }
 
     /// Reset rate limit for a key
-    pub async fn reset(&self, key: &str) -> Result<(), WafError> {
+    pub async fn reset(&self, key: &str) -> Result<()> {
         let mut conn = self.client.get_multiplexed_async_connection().await?;
         let redis_key = format!("{}{}", RATE_LIMIT_PREFIX, key);
         
-        conn.del(&redis_key).await
+        conn.del::<_, ()>(&redis_key).await
             .map_err(|e| WafError::Redis(format!("Failed to delete: {}", e)))?;
         
         Ok(())

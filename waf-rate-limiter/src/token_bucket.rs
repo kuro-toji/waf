@@ -145,20 +145,7 @@ impl TokenBucket {
     }
 }
 
-impl RateLimitInfo {
-    /// Create rate limit info from token bucket state
-    pub fn from_token_bucket(bucket: &TokenBucket, limit: u64) -> Self {
-        let remaining = bucket.tokens() as u64;
-        Self {
-            request_count: limit - remaining,
-            limit,
-            window_seconds: 1, // Token bucket is per second
-            remaining,
-            exceeded: remaining == 0,
-            reset_at: chrono::Utc::now() + chrono::Duration::seconds(1),
-        }
-    }
-}
+
 
 #[cfg(test)]
 mod tests {

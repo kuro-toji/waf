@@ -86,7 +86,7 @@ impl RateLimiter {
     }
 
     /// Create with Redis backend
-    pub async fn with_redis(config: RateLimitConfig, redis_url: &str) -> Result<Self, WafError> {
+    pub async fn with_redis(config: RateLimitConfig, redis_url: &str) -> Result<Self> {
         let redis = Some(Arc::new(RedisRateLimiter::new(redis_url).await?));
         
         Ok(Self {
@@ -97,7 +97,7 @@ impl RateLimiter {
     }
 
     /// Check rate limit for a key
-    pub async fn check(&self, key: &str) -> Result<RateLimitInfo, WafError> {
+    pub async fn check(&self, key: &str) -> Result<RateLimitInfo> {
         // Use Redis if available
         if let Some(redis) = &self.redis {
             match self.config.algorithm {
@@ -116,7 +116,7 @@ impl RateLimiter {
     }
 
     /// Check rate limit locally
-    fn check_local(&self, key: &str) -> Result<RateLimitInfo, WafError> {
+    fn check_local(&self, key: &str) -> Result<RateLimitInfo> {
         let mut limiters = self.local_limiters.write();
         
         let limiter = limiters.entry(key.to_string()).or_insert_with(|| {
@@ -161,7 +161,7 @@ impl RateLimiter {
     }
 
     /// Reset rate limit for a key
-    pub async fn reset(&self, key: &str) -> Result<(), WafError> {
+    pub async fn reset(&self, key: &str) -> Result<()> {
         if let Some(redis) = &self.redis {
             redis.reset(key).await?;
         }

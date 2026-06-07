@@ -23,8 +23,8 @@
 //! let config = ScoringConfig::medium();
 //! let engine = ScoringEngine::new(config);
 //!
-//! let mut rule = Rule::new(\"SQLi\".into(), Severity::Critical, Action::Allow);
-//! rule.tags.push(\"sqli\".into());
+//! let mut rule = Rule::new("SQLi".into(), Severity::Critical, Action::Allow);
+//! rule.tags.push("sqli".into());
 //!
 //! let score = engine.calculate_score(&[&rule]);
 //! assert!(score.should_block); // Critical = 5, exceeds Medium threshold of 40? No.
@@ -42,6 +42,7 @@
 //!     xss: 1.3    # XSS 30% more serious
 //! ```
 
+use std::collections::HashMap;
 use waf_common::*;
 
 /// Attack scoring engine implementing OWASP CRS style cumulative scoring
@@ -133,19 +134,19 @@ pub struct ScoringConfigSummary {
 
 impl std::fmt::Display for ScoringConfigSummary {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, \"Scoring Engine Configuration:\")?;
-        writeln!(f, \"  Enabled: {}\", self.enabled)?;
-        writeln!(f, \"  Sensitivity: {:?}\", self.sensitivity)?;
-        writeln!(f, \"  Block Threshold: {}\", self.block_threshold)?;
-        writeln!(f, \"  Challenge Threshold: {}\", self.challenge_threshold)?;
-        writeln!(f, \"  Max Score: {}\", self.max_score)?;
+        writeln!(f, "Scoring Engine Configuration:")?;
+        writeln!(f, "  Enabled: {}", self.enabled)?;
+        writeln!(f, "  Sensitivity: {:?}", self.sensitivity)?;
+        writeln!(f, "  Block Threshold: {}", self.block_threshold)?;
+        writeln!(f, "  Challenge Threshold: {}", self.challenge_threshold)?;
+        writeln!(f, "  Max Score: {}", self.max_score)?;
         if !self.severity_weights.is_empty() {
-            writeln!(f, \"  Severity Weights: {:?}\", self.severity_weights)?;
+            writeln!(f, "  Severity Weights: {:?}", self.severity_weights)?;
         }
         if !self.attack_multipliers.is_empty() {
-            writeln!(f, \"  Attack Multipliers: {:?}\", self.attack_multipliers)?;
+            writeln!(f, "  Attack Multipliers: {:?}", self.attack_multipliers)?;
         }
-        write!(f, \"  Exempt Rules: {}\", self.exempt_rules_count)
+        write!(f, "  Exempt Rules: {}", self.exempt_rules_count)
     }
 }
 
@@ -155,7 +156,7 @@ mod tests {
 
     fn create_test_rule(severity: Severity, tags: Vec<&str>) -> Rule {
         let mut rule = Rule::new(
-            format!(\"Test {:?} Rule\", severity),
+            format!("Test {:?} Rule", severity),
             severity,
             Action::Allow,
         );
@@ -223,33 +224,33 @@ mod tests {
     #[test]
     fn test_attack_multiplier() {
         let mut config = ScoringConfig::medium();
-        config.attack_multipliers.insert(\"sqli\".to_string(), 2.0);
+        config.attack_multipliers.insert("sqli".to_string(), 2.0);
         let engine = ScoringEngine::new(config);
 
         // Critical (5) × sqli multiplier (2.0) = 10
-        let mut rule = create_test_rule(Severity::Critical, vec![\"sqli\"]);
+        let mut rule = create_test_rule(Severity::Critical, vec!["sqli"]);
         rule.add_condition(MatchCondition {
             field: MatchField::Query,
             match_type: MatchType::Regex,
-            value: \".*\".to_string(),
+            value: ".*".to_string(),
             case_insensitive: false,
         });
 
         let score = engine.calculate_score(&[&rule]);
 
         assert_eq!(score.total, 10);
-        assert_eq!(score.attack_types, vec![\"sqli\"]);
+        assert_eq!(score.attack_types, vec!["sqli"]);
     }
 
     #[test]
     fn test_exempt_rules() {
         let mut config = ScoringConfig::medium();
-        config.score_exempt_rules.push(\"exempt-rule\".to_string());
+        config.score_exempt_rules.push("exempt-rule".to_string());
         let engine = ScoringEngine::new(config);
 
         let exempt_rule = {
             let mut r = create_test_rule(Severity::Critical, vec![]);
-            r.id = \"exempt-rule\".to_string();
+            r.id = "exempt-rule".to_string();
             r
         };
         let normal_rule = create_test_rule(Severity::Critical, vec![]);
@@ -341,20 +342,20 @@ mod tests {
         let engine = ScoringEngine::new(config);
 
         let rule1 = {
-            let mut r = create_test_rule(Severity::Critical, vec![\"sqli\"]);
-            r.id = \"sqli-001\".to_string();
+            let mut r = create_test_rule(Severity::Critical, vec!["sqli"]);
+            r.id = "sqli-001".to_string();
             r
         };
         let rule2 = {
-            let mut r = create_test_rule(Severity::High, vec![\"xss\"]);
-            r.id = \"xss-001\".to_string();
+            let mut r = create_test_rule(Severity::High, vec!["xss"]);
+            r.id = "xss-001".to_string();
             r
         };
 
         let score = engine.calculate_score(&[&rule1, &rule2]);
 
         assert_eq!(score.contributions.len(), 2);
-        assert!(score.attack_types.contains(&\"sqli\".to_string()));
-        assert!(score.attack_types.contains(&\"xss\".to_string()));
+        assert!(score.attack_types.contains(&"sqli".to_string()));
+        assert!(score.attack_types.contains(&"xss".to_string()));
     }
 }

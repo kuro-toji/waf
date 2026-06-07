@@ -108,6 +108,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         rule_matcher,
         rate_limiter,
         bot_detector,
+        threat_feeds: None,
+        anomaly_manager: create_shared_manager(),
         stats: Arc::new(std::sync::atomic::AtomicU64::new(0)),
     };
 

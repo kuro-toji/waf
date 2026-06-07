@@ -82,13 +82,13 @@ impl XxeDetector {
             ),
             // External entity reference
             (
-                Regex::new(r"(?i)SYSTEM\s+['\"]").unwrap(),
+                Regex::new(r#"(?i)SYSTEM\s+['"]"#).unwrap(),
                 "external_entity_system",
                 0.95,
             ),
             // PUBLIC external ID
             (
-                Regex::new(r"(?i)PUBLIC\s+['\"]").unwrap(),
+                Regex::new(r#"(?i)PUBLIC\s+['"]"#).unwrap(),
                 "external_entity_public",
                 0.9,
             ),
