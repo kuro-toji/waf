@@ -1,12 +1,13 @@
 # Build stage
-# Use a current stable Rust. The previous pins (1.75 → 1.83) hit
-# two problems: cargo 1.75 cannot parse lock file version 4, and
-# cargo 1.83 cannot parse manifests using edition = "2024"
-# (required by some transitive deps in our lock). 1.85 is the
-# first release with both, and edition 2024 is the highest
-# edition any dep in the lock declares today. Bump as the
-# toolchain moves.
-FROM rust:1.85-slim AS builder
+# Use a current stable Rust. The previous pins (1.75 → 1.83 → 1.85)
+# each hit a different barrier: cargo 1.75 can't parse lock v4, 1.83
+# can't parse edition 2024 manifests, and 1.85 is too old for the
+# icu_* crates idna/url pull in (they require rustc >= 1.86). The
+# Cargo.lock in this repo was written with rustc 1.95, so we pin
+# to 1.95 to match the developer toolchain — keeping the base
+# image and the lock writer in sync is the simplest way to avoid
+# version-driven build breakage. Bump as the toolchain moves.
+FROM rust:1.95-slim AS builder
 
 WORKDIR /app
 
