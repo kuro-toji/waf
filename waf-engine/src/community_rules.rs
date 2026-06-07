@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
 use tokio::fs;
-use tracing::{info, warn};
+use tracing::info;
 
 /// Community rule metadata from YAML
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -19,6 +19,7 @@ pub struct CommunityRuleMetadata {
     pub category: String,
     pub author: String,
     pub version: String,
+    #[serde(default)]
     pub tags: Vec<String>,
     pub rules: Vec<RulePattern>,
     pub tests: Option<Vec<TestCase>>,
@@ -44,7 +45,9 @@ pub struct TestCase {
 pub struct CommunityRulesIndex {
     /// Rules by category
     by_category: HashMap<String, Vec<String>>,
-    /// Rules by severity
+    /// Rules by severity. Parallel to `by_category`; population deferred
+    /// until a severity-aware indexer lands.
+    #[allow(dead_code)]
     by_severity: HashMap<String, Vec<String>>,
     /// All rule IDs
     all_ids: Vec<String>,
@@ -87,7 +90,7 @@ impl CommunityRulesIndex {
                         let file_path = file.path();
                         if file_path
                             .extension()
-                            .map_or(false, |e| e == "yaml" || e == "yml")
+                            .is_some_and(|e| e == "yaml" || e == "yml")
                         {
                             if let Some(rule_id) = Self::extract_rule_id(&file_path).await {
                                 index.all_ids.push(rule_id.clone());

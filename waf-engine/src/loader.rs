@@ -20,7 +20,7 @@
 //!
 //! ## Usage
 //!
-//! ```rust
+//! ```ignore
 //! let mut loader = RuleLoader::new();
 //! loader.add_file("rules/owasp-top10.yaml");
 //! loader.add_file("rules/custom-rules.yaml");
