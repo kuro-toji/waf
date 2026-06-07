@@ -24,9 +24,13 @@
 mod api;
 mod state;
 
+use axum::{
+    middleware,
+    routing::{delete, get, post, put},
+    Router,
+};
 use std::sync::Arc;
-use axum::{Router, routing::{get, post, put, delete}, middleware};
-use tower_http::cors::{CorsLayer, Any};
+use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Clone)]
@@ -63,7 +67,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let app = Router::new()
         .route("/api/rules", get(api::list_rules).post(api::create_rule))
-        .route("/api/rules/:id", get(api::get_rule).put(api::update_rule).delete(api::delete_rule))
+        .route(
+            "/api/rules/:id",
+            get(api::get_rule)
+                .put(api::update_rule)
+                .delete(api::delete_rule),
+        )
         .route("/api/stats", get(api::get_stats))
         .route("/api/stats/attacks", get(api::get_attack_stats))
         .route("/api/stats/traffic", get(api::get_traffic_stats))
@@ -85,5 +94,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 async fn shutdown_signal() {
-    tokio::signal::ctrl_c().await.expect("Failed to install CTRL+C signal handler");
+    tokio::signal::ctrl_c()
+        .await
+        .expect("Failed to install CTRL+C signal handler");
 }

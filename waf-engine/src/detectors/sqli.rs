@@ -87,11 +87,7 @@ impl SqlInjectionDetector {
                 0.9,
             ),
             // Comment-based injection
-            (
-                Regex::new(r"(?i)--|/\*|\*/").unwrap(),
-                "sql_comment",
-                0.7,
-            ),
+            (Regex::new(r"(?i)--|/\*|\*/").unwrap(), "sql_comment", 0.7),
             // OR-based injection (tautology)
             (
                 Regex::new(r#"(?i)\b(or|and)\s+["']?\w+["']?\s*(=|>|<)\s*["']?\w+["']?"#).unwrap(),
@@ -111,11 +107,7 @@ impl SqlInjectionDetector {
                 0.9,
             ),
             // Hex-encoded injection
-            (
-                Regex::new(r"0x[0-9a-f]+").unwrap(),
-                "hex_encoding",
-                0.6,
-            ),
+            (Regex::new(r"0x[0-9a-f]+").unwrap(), "hex_encoding", 0.6),
             // SLEEP/BENCHMARK (time-based blind)
             (
                 Regex::new(r"(?i)\b(sleep|benchmark|waitfor|pg_sleep)\s*\(").unwrap(),
@@ -124,7 +116,8 @@ impl SqlInjectionDetector {
             ),
             // Information schema access
             (
-                Regex::new(r"(?i)(information_schema|mysql\.database|pg_catalog|sysobjects)").unwrap(),
+                Regex::new(r"(?i)(information_schema|mysql\.database|pg_catalog|sysobjects)")
+                    .unwrap(),
                 "info_schema",
                 0.85,
             ),
@@ -137,13 +130,40 @@ impl SqlInjectionDetector {
         ];
 
         let sql_keywords = vec![
-            "select", "insert", "update", "delete", "drop", "create", "alter", "exec",
-            "execute", "union", "where", "from", "table", "database", "schema",
-            "having", "group by", "order by", "limit", "offset", "join", "inner join",
-            "left join", "right join", "outer join", "in", "not in", "between",
+            "select",
+            "insert",
+            "update",
+            "delete",
+            "drop",
+            "create",
+            "alter",
+            "exec",
+            "execute",
+            "union",
+            "where",
+            "from",
+            "table",
+            "database",
+            "schema",
+            "having",
+            "group by",
+            "order by",
+            "limit",
+            "offset",
+            "join",
+            "inner join",
+            "left join",
+            "right join",
+            "outer join",
+            "in",
+            "not in",
+            "between",
         ];
 
-        Self { patterns, sql_keywords }
+        Self {
+            patterns,
+            sql_keywords,
+        }
     }
 
     /// Detect SQL injection in a string
@@ -164,7 +184,7 @@ impl SqlInjectionDetector {
         // Check for SQL keyword density
         let keyword_count = self.count_sql_keywords(input);
         let word_count = input.split_whitespace().count();
-        
+
         if word_count > 0 {
             let density = keyword_count as f32 / word_count as f32;
             if density > 0.3 && keyword_count >= 2 {
@@ -206,7 +226,7 @@ impl SqlInjectionDetector {
             if let Some((_key, value)) = pair.split_once('=') {
                 // URL decode the value
                 let decoded = decode_url(value);
-                
+
                 // Check for SQL injection patterns
                 let result = self.detect(&decoded);
                 if result.detected {
@@ -291,7 +311,7 @@ mod tests {
     #[test]
     fn test_union_select_detection() {
         let detector = SqlInjectionDetector::new();
-        
+
         let result = detector.detect("1 UNION SELECT username, password FROM users");
         assert!(result.detected);
         assert_eq!(result.pattern, "union_select");
@@ -300,7 +320,7 @@ mod tests {
     #[test]
     fn test_or_tautology_detection() {
         let detector = SqlInjectionDetector::new();
-        
+
         let result = detector.detect("id=1 OR 1=1");
         assert!(result.detected);
         assert_eq!(result.pattern, "or_condition");
@@ -309,7 +329,7 @@ mod tests {
     #[test]
     fn test_stacked_query_detection() {
         let detector = SqlInjectionDetector::new();
-        
+
         let result = detector.detect("1; DROP TABLE users");
         assert!(result.detected);
         assert_eq!(result.pattern, "stacked_query");
@@ -318,7 +338,7 @@ mod tests {
     #[test]
     fn test_time_based_blind_detection() {
         let detector = SqlInjectionDetector::new();
-        
+
         let result = detector.detect("1 AND SLEEP(5)");
         assert!(result.detected);
         assert_eq!(result.pattern, "time_blind");
@@ -327,7 +347,7 @@ mod tests {
     #[test]
     fn test_normal_input() {
         let detector = SqlInjectionDetector::new();
-        
+
         let result = detector.detect("hello world");
         assert!(!result.detected);
     }
@@ -335,7 +355,7 @@ mod tests {
     #[test]
     fn test_quote_anomaly_detection() {
         let detector = SqlInjectionDetector::new();
-        
+
         // Odd number of quotes is suspicious
         let result = detector.detect("name='test");
         assert!(result.detected);
@@ -345,7 +365,7 @@ mod tests {
     #[test]
     fn test_query_detection() {
         let detector = SqlInjectionDetector::new();
-        
+
         let results = detector.detect_in_query("id=1 UNION SELECT * FROM users&name=test");
         assert!(!results.is_empty());
     }

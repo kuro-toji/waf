@@ -152,7 +152,7 @@ impl RfiDetector {
         if self.allowed_domains.is_empty() {
             return false;
         }
-        
+
         self.allowed_domains.iter().any(|d| url.contains(d))
     }
 
@@ -175,7 +175,7 @@ mod tests {
     #[test]
     fn test_rfi_detection() {
         let detector = RfiDetector::new();
-        
+
         let result = detector.detect("page=http://malicious.local/shell.txt");
         assert!(result.detected);
         assert_eq!(result.pattern, "rfi_param");
@@ -184,7 +184,7 @@ mod tests {
     #[test]
     fn test_php_wrapper_detection() {
         let detector = RfiDetector::new();
-        
+
         let result = detector.detect("file=php://input");
         assert!(result.detected);
     }

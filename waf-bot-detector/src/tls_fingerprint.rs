@@ -146,11 +146,7 @@ impl Ja4Data {
     pub fn to_ja4_string(&self) -> String {
         format!(
             "t{}d{}{}_{}_{}",
-            self.proto,
-            self.cipher_count,
-            self.first_cipher,
-            self.extension_count,
-            self.sni_hash
+            self.proto, self.cipher_count, self.first_cipher, self.extension_count, self.sni_hash
         )
     }
 }
@@ -163,8 +159,8 @@ impl Default for Ja4Data {
 
 /// GREASE values in TLS (reserved values that should be ignored)
 const GREASE_VALUES: [u16; 16] = [
-    0x0A0A, 0x1A1A, 0x2A2A, 0x3A3A, 0x4A4A, 0x5A5A, 0x6A6A, 0x7A7A,
-    0x8A8A, 0x9A9A, 0xAAAA, 0xBABA, 0xCACA, 0xDADA, 0xEAEA, 0xFAFA,
+    0x0A0A, 0x1A1A, 0x2A2A, 0x3A3A, 0x4A4A, 0x5A5A, 0x6A6A, 0x7A7A, 0x8A8A, 0x9A9A, 0xAAAA, 0xBABA,
+    0xCACA, 0xDADA, 0xEAEA, 0xFAFA,
 ];
 
 /// Check if a value is a GREASE value
@@ -221,24 +217,24 @@ impl Ja3Hasher {
 
         // Parse ClientHello body
         let client_version = ((handshake[4] as u16) << 8) | (handshake[5] as u16);
-        
+
         // Skip client random (32 bytes)
         let mut pos = 4 + 32;
-        
+
         // Session ID length
         if pos >= handshake.len() {
             return None;
         }
         let session_id_len = handshake[pos] as usize;
         pos += 1 + session_id_len;
-        
+
         // Cipher suites length
         if pos + 2 > handshake.len() {
             return None;
         }
         let cipher_suites_len = ((handshake[pos] as usize) << 8) | (handshake[pos + 1] as usize);
         pos += 2;
-        
+
         // Parse cipher suites
         let mut ciphers = Vec::new();
         let cipher_end = pos + cipher_suites_len;
@@ -249,44 +245,48 @@ impl Ja3Hasher {
             }
             pos += 2;
         }
-        
+
         // Compression methods
         if pos >= handshake.len() {
             return None;
         }
         let compression_len = handshake[pos] as usize;
         pos += 1 + compression_len;
-        
+
         // Extensions
         let mut extensions = Vec::new();
         let mut elliptic_curves = Vec::new();
         let mut ec_point_formats = Vec::new();
-        
+
         if pos + 2 > handshake.len() {
             return None;
         }
         let extensions_len = ((handshake[pos] as usize) << 8) | (handshake[pos + 1] as usize);
         pos += 2;
-        
+
         let extensions_end = pos + extensions_len;
         while pos + 4 <= extensions_end && pos + 4 <= handshake.len() {
             let ext_type = ((handshake[pos] as u16) << 8) | (handshake[pos + 1] as u16);
             let ext_len = ((handshake[pos + 2] as usize) << 8) | (handshake[pos + 3] as usize);
             pos += 4;
-            
+
             if !is_grease(ext_type) {
                 extensions.push(ext_type);
             }
-            
+
             // Parse extension data based on type
             match ext_type {
-                0x0A => { // Elliptic curves (extension 10)
+                0x0A => {
+                    // Elliptic curves (extension 10)
                     if pos + 2 <= extensions_end && pos + 2 + ext_len <= handshake.len() {
-                        let curves_len = ((handshake[pos] as usize) << 8) | (handshake[pos + 1] as usize);
+                        let curves_len =
+                            ((handshake[pos] as usize) << 8) | (handshake[pos + 1] as usize);
                         let curves_start = pos + 2;
                         for i in (0..curves_len).step_by(2) {
-                            if curves_start + i + 2 <= extensions_end && curves_start + i + ext_len <= handshake.len() {
-                                let curve = ((handshake[curves_start + i] as u16) << 8) 
+                            if curves_start + i + 2 <= extensions_end
+                                && curves_start + i + ext_len <= handshake.len()
+                            {
+                                let curve = ((handshake[curves_start + i] as u16) << 8)
                                     | (handshake[curves_start + i + 1] as u16);
                                 if !is_grease(curve) {
                                     elliptic_curves.push(curve);
@@ -295,11 +295,13 @@ impl Ja3Hasher {
                         }
                     }
                 }
-                0x0B => { // EC point formats (extension 11)
+                0x0B => {
+                    // EC point formats (extension 11)
                     if pos + 1 <= extensions_end && pos + 1 + ext_len <= handshake.len() {
                         let formats_len = handshake[pos] as usize;
                         for i in 0..formats_len {
-                            if pos + 1 + i < extensions_end && pos + 1 + ext_len <= handshake.len() {
+                            if pos + 1 + i < extensions_end && pos + 1 + ext_len <= handshake.len()
+                            {
                                 ec_point_formats.push(handshake[pos + 1 + i]);
                             }
                         }
@@ -307,17 +309,33 @@ impl Ja3Hasher {
                 }
                 _ => {}
             }
-            
+
             pos += ext_len;
         }
-        
+
         Some(format!(
             "{},{},{},{},{}",
             client_version,
-            ciphers.iter().map(|v| v.to_string()).collect::<Vec<_>>().join("-"),
-            extensions.iter().map(|v| v.to_string()).collect::<Vec<_>>().join("-"),
-            elliptic_curves.iter().map(|v| v.to_string()).collect::<Vec<_>>().join("-"),
-            ec_point_formats.iter().map(|v| v.to_string()).collect::<Vec<_>>().join("-"),
+            ciphers
+                .iter()
+                .map(|v| v.to_string())
+                .collect::<Vec<_>>()
+                .join("-"),
+            extensions
+                .iter()
+                .map(|v| v.to_string())
+                .collect::<Vec<_>>()
+                .join("-"),
+            elliptic_curves
+                .iter()
+                .map(|v| v.to_string())
+                .collect::<Vec<_>>()
+                .join("-"),
+            ec_point_formats
+                .iter()
+                .map(|v| v.to_string())
+                .collect::<Vec<_>>()
+                .join("-"),
         ))
     }
 
@@ -329,21 +347,21 @@ impl Ja3Hasher {
         }
 
         let mut ja3 = Ja3Data::new();
-        
+
         // Get version from record
         ja3.version = ((data[1] as u16) << 8) | (data[2] as u16);
-        
+
         // Rest is handshake data - simplified parsing
         let handshake = &data[5..];
         if handshake.len() < 4 {
             return None;
         }
-        
+
         // Set some defaults for testing
         ja3.cipher_suites = vec![0x1301, 0x1302, 0x1303]; // TLS 1.3 cipher suites
         ja3.extensions = vec![0x002B, 0x0033, 0x001D]; // Known extensions
         ja3.elliptic_curves = vec![0x0017, 0x0018, 0x0019]; // Prime curves
-        
+
         Some(ja3)
     }
 }
@@ -402,10 +420,10 @@ impl TlsFingerprintMatcher {
     fn load_default_signatures(&mut self) {
         // Common headless browser JA3 hashes (example hashes)
         // These would be populated from real fingerprint databases
-        
+
         // Note: These are example placeholder hashes
         // In production, use a real fingerprint database
-        
+
         // Known bots
         self.known_bots.insert(
             Ja3Hash::new("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4".to_string()),
@@ -415,12 +433,10 @@ impl TlsFingerprintMatcher {
                 description: "Common vulnerability scanner",
             },
         );
-        
+
         // Known browsers (partial hash as example)
-        self.known_browsers.insert(
-            Ja3Hash::new("firefox_ja3_hash_here".to_string()),
-            "Firefox",
-        );
+        self.known_browsers
+            .insert(Ja3Hash::new("firefox_ja3_hash_here".to_string()), "Firefox");
     }
 
     /// Check if a JA3 hash matches a known bot
@@ -496,7 +512,7 @@ mod tests {
         data.version = 0x0303; // TLS 1.2
         data.cipher_suites = vec![0x002F, 0x009C, 0xC02C];
         data.extensions = vec![0x002B, 0x0033, 0x0010];
-        
+
         let ja3_string = data.to_ja3_string();
         assert!(ja3_string.contains("771")); // TLS 1.2
     }
@@ -507,7 +523,7 @@ mod tests {
         data.proto = "13".to_string();
         data.cipher_count = "03".to_string();
         data.first_cipher = "1301".to_string();
-        
+
         let ja4_string = data.to_ja4_string();
         assert!(ja4_string.starts_with("t13"));
     }
@@ -523,19 +539,19 @@ mod tests {
     #[test]
     fn test_bot_score_calculation() {
         let matcher = TlsFingerprintMatcher::new();
-        
+
         // Unknown hash should get moderate score
         let unknown = Ja3Hash::new("unknown_hash_123456".to_string());
         let score = matcher.calculate_bot_score(&unknown);
         assert!(score <= 30); // Unknown should be 30
-        
+
         // Known bot hash (if we had one) should get higher score
     }
 
     #[test]
     fn test_ja3_hasher_minimal_data() {
         let hasher = Ja3Hasher::new();
-        
+
         // Too short data should return None
         let result = hasher.compute_ja3_from_bytes(&[0x16, 0x03, 0x03]);
         assert!(result.is_none());

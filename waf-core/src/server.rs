@@ -39,7 +39,10 @@ pub fn create_router(state: AppState) -> Router {
         .route("/health", get(health_handler))
         .route("/ready", get(ready_handler))
         .route("/metrics", get(metrics_handler))
-        .route("/_waf_challenge", get(challenge_handler).post(challenge_handler))
+        .route(
+            "/_waf_challenge",
+            get(challenge_handler).post(challenge_handler),
+        )
         .route("/", get(proxy_handler).post(proxy_handler))
         .route("/*path", get(proxy_handler).post(proxy_handler))
         .layer(TraceLayer::new_for_http())
@@ -58,7 +61,7 @@ async fn health_handler() -> Response<Body> {
 async fn ready_handler(State(state): State<AppState>) -> Response<Body> {
     let stats = state.stats.load(std::sync::atomic::Ordering::Relaxed);
     let body = format!(r#"{{"ready":true,"requests_processed":{}}}"#, stats);
-    
+
     Response::builder()
         .status(StatusCode::OK)
         .body(Body::from(body))
@@ -68,7 +71,7 @@ async fn ready_handler(State(state): State<AppState>) -> Response<Body> {
 /// Prometheus metrics handler
 async fn metrics_handler() -> Response<Body> {
     let metrics_text = crate::metrics::gather_metrics();
-    
+
     Response::builder()
         .header("Content-Type", "text/plain; version=0.0.4")
         .status(StatusCode::OK)
@@ -84,7 +87,7 @@ async fn challenge_handler(
     // Extract challenge response and validate
     let uri = request.uri();
     let query = uri.query().unwrap_or("");
-    
+
     if query.contains("solve=") {
         // This is a challenge solution
         Response::builder()
@@ -93,20 +96,23 @@ async fn challenge_handler(
             .unwrap()
     } else {
         // Show challenge page
-        let challenge_html = state.bot_detector.generate_challenge(&waf_common::RequestContext {
-            id: "challenge".to_string(),
-            method: waf_common::HttpMethod::Get,
-            uri: uri.path().to_string(),
-            query_string: String::new(),
-            headers: vec![],
-            client_ip: "0.0.0.0".to_string(),
-            body: None,
-            content_type: None,
-            timestamp: chrono::Utc::now(),
-            tls: None,
-            rate_limit_info: None,
-        }).await;
-        
+        let challenge_html = state
+            .bot_detector
+            .generate_challenge(&waf_common::RequestContext {
+                id: "challenge".to_string(),
+                method: waf_common::HttpMethod::Get,
+                uri: uri.path().to_string(),
+                query_string: String::new(),
+                headers: vec![],
+                client_ip: "0.0.0.0".to_string(),
+                body: None,
+                content_type: None,
+                timestamp: chrono::Utc::now(),
+                tls: None,
+                rate_limit_info: None,
+            })
+            .await;
+
         Response::builder()
             .status(StatusCode::OK)
             .header("Content-Type", "text/html")
@@ -116,12 +122,11 @@ async fn challenge_handler(
 }
 
 /// Main proxy handler
-async fn proxy_handler(
-    State(state): State<AppState>,
-    request: Request<Body>,
-) -> Response<Body> {
-    state.stats.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    
+async fn proxy_handler(State(state): State<AppState>, request: Request<Body>) -> Response<Body> {
+    state
+        .stats
+        .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
     match process_request(state, request).await {
         Ok(response) => response,
         Err(e) => {
@@ -137,12 +142,12 @@ async fn proxy_handler(
 /// Start the server
 pub async fn start(state: AppState) -> Result<(), Box<dyn std::error::Error>> {
     let addr: std::net::SocketAddr = state.config.waf.listen_addr.parse()?;
-    
+
     tracing::info!("WAF listening on {}", addr);
-    
+
     let listener = tokio::net::TcpListener::bind(addr).await?;
     let router = create_router(state);
-    
+
     axum::serve(listener, router)
         .with_graceful_shutdown(shutdown_signal())
         .await?;

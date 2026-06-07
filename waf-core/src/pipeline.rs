@@ -28,8 +28,8 @@ use http::{HeaderMap, StatusCode};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use waf_common::*;
 use crate::AppState;
+use waf_common::*;
 
 /// Process incoming request through WAF pipeline
 pub async fn process_request(
@@ -37,10 +37,11 @@ pub async fn process_request(
     mut request: Request<Body>,
 ) -> Result<Response<Body>> {
     let client_ip = extract_client_ip_from_request(&request, &state.config.waf.trusted_proxies);
-    
-    tracing::debug!("Processing request from {}: {} {}", 
-        client_ip, 
-        request.method(), 
+
+    tracing::debug!(
+        "Processing request from {}: {} {}",
+        client_ip,
+        request.method(),
         request.uri()
     );
 
@@ -49,7 +50,10 @@ pub async fn process_request(
 
     // Check threat feeds (fast path - block known malicious IPs early)
     if let Some(ref threat_feeds) = state.threat_feeds {
-        let client_ip_addr: std::net::IpAddr = ctx.client_ip.parse().unwrap_or_else(|_| "0.0.0.0".parse().unwrap());
+        let client_ip_addr: std::net::IpAddr = ctx
+            .client_ip
+            .parse()
+            .unwrap_or_else(|_| "0.0.0.0".parse().unwrap());
         if threat_feeds.is_blocked(&client_ip_addr).await {
             tracing::warn!(
                 target: "threat_feed",
@@ -77,24 +81,30 @@ pub async fn process_request(
     let request_start = Instant::now();
     {
         let mut manager = state.anomaly_manager.write().await;
-        
+
         // Track request rate for this IP
-        manager.add_sample(MetricType::RequestRate, rate_limit_result.request_count as f64);
-        
+        manager.add_sample(
+            MetricType::RequestRate,
+            rate_limit_result.request_count as f64,
+        );
+
         // Track header size
         manager.add_sample(MetricType::HeaderSize, ctx.headers.len() as f64);
-        
+
         // Track body size (if applicable)
         if let Some(body_len) = ctx.body.as_ref().map(|b| b.len()) {
             manager.add_sample(MetricType::BodySize, body_len as f64);
         }
-        
+
         // Check for anomalies in these metrics
-        let request_rate_score = manager.get_score(MetricType::RequestRate, rate_limit_result.request_count as f64);
+        let request_rate_score = manager.get_score(
+            MetricType::RequestRate,
+            rate_limit_result.request_count as f64,
+        );
         let header_score = manager.get_score(MetricType::HeaderSize, ctx.headers.len() as f64);
-        
+
         let global_score = manager.get_global_score();
-        
+
         if global_score > 0.7 {
             tracing::warn!(
                 target: "anomaly",
@@ -110,18 +120,32 @@ pub async fn process_request(
     // Bot detection
     let bot_result = state.bot_detector.detect(&ctx);
     if bot_result.is_bot {
-        tracing::warn!("Bot detected from {}: score={}", ctx.client_ip, bot_result.score);
-        state.bot_detector.update_ip_reputation(&ctx.client_ip, true);
-        
-        if let Action::Block { status_code, body, reason } = bot_result.recommended_action {
+        tracing::warn!(
+            "Bot detected from {}: score={}",
+            ctx.client_ip,
+            bot_result.score
+        );
+        state
+            .bot_detector
+            .update_ip_reputation(&ctx.client_ip, true);
+
+        if let Action::Block {
+            status_code,
+            body,
+            reason,
+        } = bot_result.recommended_action
+        {
             tracing::info!("Blocking bot: {} - {}", ctx.client_ip, reason);
-            return Ok(create_block_response(StatusCode::from_u16(status_code).unwrap_or(StatusCode::FORBIDDEN), &body));
+            return Ok(create_block_response(
+                StatusCode::from_u16(status_code).unwrap_or(StatusCode::FORBIDDEN),
+                &body,
+            ));
         }
     }
 
     // WAF rule evaluation
     let eval_result = state.rule_matcher.evaluate(&ctx);
-    
+
     if !eval_result.allowed {
         let matched = &eval_result.matched_rules;
         if !matched.is_empty() {
@@ -139,7 +163,10 @@ pub async fn process_request(
         }
 
         let action = &eval_result.action;
-        if let Action::Block { status_code, body, .. } = action {
+        if let Action::Block {
+            status_code, body, ..
+        } = action
+        {
             return Ok(create_block_response(
                 StatusCode::from_u16(*status_code).unwrap_or(StatusCode::FORBIDDEN),
                 body,
@@ -161,13 +188,13 @@ pub async fn process_request(
     let response_start = Instant::now();
     let upstream_response = forward_to_upstream(&state, request, &ctx).await?;
     let response_time = response_start.elapsed();
-    
+
     // Track response time anomaly
     {
         let mut manager = state.anomaly_manager.write().await;
         manager.add_sample(MetricType::ResponseTime, response_time.as_millis() as f64);
     }
-    
+
     let _request_duration = request_start.elapsed(); // Total request time
 
     Ok(upstream_response)
@@ -176,7 +203,7 @@ pub async fn process_request(
 /// Extract client IP from request
 fn extract_client_ip_from_request(request: &Request<Body>, trusted_proxies: &[String]) -> String {
     let headers = request.headers();
-    
+
     if let Some(xff) = headers.get("x-forwarded-for") {
         if let Ok(xff_str) = xff.to_str() {
             if let Some(first_ip) = xff_str.split(',').next() {
@@ -203,7 +230,7 @@ async fn build_request_context(
     let method = HttpMethod::from(request.method().as_str());
     let uri = request.uri().path().to_string();
     let query_string = request.uri().query().unwrap_or("").to_string();
-    
+
     let mut headers = Vec::new();
     for (key, value) in request.headers().iter() {
         if let Ok(v) = value.to_str() {
@@ -211,7 +238,8 @@ async fn build_request_context(
         }
     }
 
-    let content_type = request.headers()
+    let content_type = request
+        .headers()
         .get("content-type")
         .and_then(|v| v.to_str().ok())
         .map(|s| s.to_string());
@@ -268,13 +296,12 @@ async fn forward_to_upstream(
     _ctx: &RequestContext,
 ) -> Result<Response<Body>> {
     let upstream_addr = &state.config.waf.upstream_addr;
-    
+
     // Build upstream URI
     let upstream_uri = format!("http://{}{}", upstream_addr, request.uri());
-    
-    let client = hyper_util::client::legacy::Client::builder(
-        hyper_util::rt::TokioExecutor::new()
-    ).build_http();
+
+    let client = hyper_util::client::legacy::Client::builder(hyper_util::rt::TokioExecutor::new())
+        .build_http();
 
     // Create new request to upstream
     let (parts, body) = request.into_parts();

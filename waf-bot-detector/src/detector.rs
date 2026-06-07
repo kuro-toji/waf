@@ -178,10 +178,12 @@ impl BotDetector {
 
     /// Generate a challenge for a request
     pub async fn generate_challenge(&self, ctx: &RequestContext) -> String {
-        let challenge_id = self.challenge_generator
+        let challenge_id = self
+            .challenge_generator
             .generate_challenge(&ctx.client_ip)
             .await;
-        self.challenge_generator.generate_challenge_page(&challenge_id)
+        self.challenge_generator
+            .generate_challenge_page(&challenge_id)
     }
 
     /// Validate a challenge response

@@ -155,11 +155,7 @@ mod tests {
     use super::*;
 
     fn create_test_rule(severity: Severity, tags: Vec<&str>) -> Rule {
-        let mut rule = Rule::new(
-            format!("Test {:?} Rule", severity),
-            severity,
-            Action::Allow,
-        );
+        let mut rule = Rule::new(format!("Test {:?} Rule", severity), severity, Action::Allow);
         rule.tags = tags.into_iter().map(|s| s.to_string()).collect();
         rule
     }
@@ -279,7 +275,7 @@ mod tests {
         let config = ScoringConfig {
             enabled: true,
             sensitivity: Sensitivity::Low, // high threshold
-            max_score: 50, // low cap
+            max_score: 50,                 // low cap
             ..Default::default()
         };
         let engine = ScoringEngine::new(config);

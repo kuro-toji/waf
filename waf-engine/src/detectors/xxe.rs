@@ -93,11 +93,7 @@ impl XxeDetector {
                 0.9,
             ),
             // File scheme in entity
-            (
-                Regex::new(r"(?i)file\s*://").unwrap(),
-                "file_scheme",
-                0.8,
-            ),
+            (Regex::new(r"(?i)file\s*://").unwrap(), "file_scheme", 0.8),
             // PHP wrapper
             (
                 Regex::new(r"(?i)(php://|expect://|ogg://)").unwrap(),
@@ -105,11 +101,7 @@ impl XxeDetector {
                 0.95,
             ),
             // HTTP scheme in entity
-            (
-                Regex::new(r"(?i)http\s*://").unwrap(),
-                "http_scheme",
-                0.7,
-            ),
+            (Regex::new(r"(?i)http\s*://").unwrap(), "http_scheme", 0.7),
             // Parameter entity
             (
                 Regex::new(r"(?i)%[a-zA-Z]+;").unwrap(),
@@ -117,11 +109,7 @@ impl XxeDetector {
                 0.6,
             ),
             // CDATA section (sometimes used in XXE)
-            (
-                Regex::new(r"(?i)<!\[CDATA\[").unwrap(),
-                "cdata",
-                0.5,
-            ),
+            (Regex::new(r"(?i)<!\[CDATA\[").unwrap(), "cdata", 0.5),
         ];
 
         Self { patterns }
@@ -168,7 +156,7 @@ mod tests {
     #[test]
     fn test_doctype_detection() {
         let detector = XxeDetector::new();
-        
+
         let result = detector.detect("<!DOCTYPE foo [<!ENTITY bar 'baz'>]>");
         assert!(result.detected);
         assert_eq!(result.pattern, "entity_declaration");
@@ -177,7 +165,7 @@ mod tests {
     #[test]
     fn test_external_entity_detection() {
         let detector = XxeDetector::new();
-        
+
         let result = detector.detect(r#"<!ENTITY xxe SYSTEM "file:///etc/passwd">"#);
         assert!(result.detected);
         assert_eq!(result.pattern, "external_entity_system");
@@ -186,8 +174,10 @@ mod tests {
     #[test]
     fn test_php_wrapper_detection() {
         let detector = XxeDetector::new();
-        
-        let result = detector.detect(r#"<!ENTITY xxe SYSTEM "php://filter/convert.base64-encode/resource=index.php">"#);
+
+        let result = detector.detect(
+            r#"<!ENTITY xxe SYSTEM "php://filter/convert.base64-encode/resource=index.php">"#,
+        );
         assert!(result.detected);
         assert_eq!(result.pattern, "php_wrapper");
     }

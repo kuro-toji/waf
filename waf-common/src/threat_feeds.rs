@@ -26,13 +26,13 @@
 //! - Spamhaus DROP: Daily (rate limited by Spamhaus)
 //! - Tor Exit Nodes: Hourly
 
+use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
-use chrono::{DateTime, Utc};
 
 /// Threat feed entry with metadata
 #[derive(Debug, Clone)]
@@ -62,7 +62,12 @@ impl ThreatEntry {
     }
 
     /// Create with custom confidence
-    pub fn with_confidence(ip: IpAddr, source: FeedSource, category: ThreatCategory, confidence: u8) -> Self {
+    pub fn with_confidence(
+        ip: IpAddr,
+        source: FeedSource,
+        category: ThreatCategory,
+        confidence: u8,
+    ) -> Self {
         Self {
             ip,
             source,
@@ -102,9 +107,9 @@ impl FeedSource {
     pub fn recommended_update_interval(&self) -> Duration {
         match self {
             FeedSource::EmergingThreats => Duration::from_secs(6 * 3600), // 6 hours
-            FeedSource::SpamhausDROP => Duration::from_secs(24 * 3600), // Daily
-            FeedSource::TorExitNodes => Duration::from_secs(3600), // Hourly
-            FeedSource::CiArmy => Duration::from_secs(6 * 3600), // 6 hours
+            FeedSource::SpamhausDROP => Duration::from_secs(24 * 3600),   // Daily
+            FeedSource::TorExitNodes => Duration::from_secs(3600),        // Hourly
+            FeedSource::CiArmy => Duration::from_secs(6 * 3600),          // 6 hours
         }
     }
 }
@@ -271,7 +276,10 @@ impl BlockedNetwork {
         if prefix_len > 32 {
             return None;
         }
-        Some(Self { network: ip, prefix_len })
+        Some(Self {
+            network: ip,
+            prefix_len,
+        })
     }
 }
 
@@ -327,7 +335,10 @@ impl ThreatFeedManager {
 
     /// Sync a specific feed
     pub async fn sync_feed(&self, source: FeedSource) -> Result<usize, FeedError> {
-        let feed = self.feeds.iter().find(|f| f.source == source && f.enabled)
+        let feed = self
+            .feeds
+            .iter()
+            .find(|f| f.source == source && f.enabled)
             .ok_or(FeedError::FeedNotFound)?;
 
         let entries = self.fetch_and_parse_feed(feed).await?;
@@ -380,7 +391,12 @@ impl ThreatFeedManager {
 
             // Try parsing as plain IP
             if let Ok(ip) = line.parse::<IpAddr>() {
-                entries.push(ThreatEntry::with_confidence(ip, feed.source, feed.category, feed.confidence));
+                entries.push(ThreatEntry::with_confidence(
+                    ip,
+                    feed.source,
+                    feed.category,
+                    feed.confidence,
+                ));
                 continue;
             }
 

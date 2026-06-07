@@ -17,16 +17,18 @@
 //! Configuration is loaded from `config/waf.yaml` by default.
 //! Override with `WAF_CONFIG` environment variable.
 
-mod server;
-mod pipeline;
-mod upstream;
 mod metrics;
+mod pipeline;
+mod server;
+mod upstream;
 
 use std::sync::Arc;
-use waf_common::{WafConfig, WafError, ThreatFeedManager, SharedAnomalyManager, create_shared_manager};
-use waf_engine::{RuleMatcher, RuleLoader};
-use waf_rate_limiter::RateLimiter;
 use waf_bot_detector::BotDetector;
+use waf_common::{
+    create_shared_manager, SharedAnomalyManager, ThreatFeedManager, WafConfig, WafError,
+};
+use waf_engine::{RuleLoader, RuleMatcher};
+use waf_rate_limiter::RateLimiter;
 
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -70,15 +72,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     rule_loader.add_file("rules/rate-limits.yaml");
     rule_loader.add_file("rules/bot-rules.yaml");
 
-    let rules = rule_loader.load()
+    let rules = rule_loader
+        .load()
         .map_err(|e| format!("Failed to load rules: {}", e))?;
 
     tracing::info!("Loaded {} rules", rules.len());
 
-    let rule_matcher = Arc::new(RuleMatcher::new(
-        rules,
-        waf_common::Severity::Medium,
-    ));
+    let rule_matcher = Arc::new(RuleMatcher::new(rules, waf_common::Severity::Medium));
 
     let rate_limiter_config = waf_rate_limiter::RateLimitConfig {
         algorithm: waf_rate_limiter::RateLimitAlgorithm::SlidingWindow,
@@ -88,8 +88,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let rate_limiter = if let Some(redis_url) = &config.rate_limiter.redis_url {
-        Arc::new(RateLimiter::with_redis(rate_limiter_config, redis_url).await
-            .map_err(|e| format!("Failed to connect to Redis: {}", e))?)
+        Arc::new(
+            RateLimiter::with_redis(rate_limiter_config, redis_url)
+                .await
+                .map_err(|e| format!("Failed to connect to Redis: {}", e))?,
+        )
     } else {
         Arc::new(RateLimiter::new(rate_limiter_config))
     };

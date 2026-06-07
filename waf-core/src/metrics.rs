@@ -33,64 +33,80 @@
 //! record_latency(0.005); // 5ms
 //! ```
 
-use prometheus::{
-    Counter, Histogram, Gauge, Opts, Registry, TextEncoder, Encoder
-};
-use std::sync::OnceLock;
 use once_cell::sync::Lazy;
+use prometheus::{Counter, Encoder, Gauge, Histogram, Opts, Registry, TextEncoder};
+use std::sync::OnceLock;
 use tokio::io::AsyncWriteExt;
 
 static REGISTRY: OnceLock<Registry> = OnceLock::new();
 
 /// Request counter
 static WAF_REQUESTS_TOTAL: Lazy<Counter> = Lazy::new(|| {
-    Counter::with_opts(Opts::new("waf_requests_total", "Total requests processed"))
-        .unwrap()
+    Counter::with_opts(Opts::new("waf_requests_total", "Total requests processed")).unwrap()
 });
 
 /// Allowed request counter
 static WAF_REQUESTS_ALLOWED: once_cell::sync::Lazy<Counter> = once_cell::sync::Lazy::new(|| {
-    Counter::with_opts(Opts::new("waf_requests_allowed_total", "Total allowed requests"))
-        .unwrap()
+    Counter::with_opts(Opts::new(
+        "waf_requests_allowed_total",
+        "Total allowed requests",
+    ))
+    .unwrap()
 });
 
 /// Blocked request counter
 static WAF_REQUESTS_BLOCKED: once_cell::sync::Lazy<Counter> = once_cell::sync::Lazy::new(|| {
-    Counter::with_opts(Opts::new("waf_requests_blocked_total", "Total blocked requests"))
-        .unwrap()
+    Counter::with_opts(Opts::new(
+        "waf_requests_blocked_total",
+        "Total blocked requests",
+    ))
+    .unwrap()
 });
 
 /// Request latency histogram
 static WAF_LATENCY: once_cell::sync::Lazy<Histogram> = once_cell::sync::Lazy::new(|| {
-    Histogram::with_opts(prometheus::HistogramOpts::new(
-        "waf_request_latency_seconds",
-        "Request processing latency in seconds"
-    ).buckets(vec![0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0]))
+    Histogram::with_opts(
+        prometheus::HistogramOpts::new(
+            "waf_request_latency_seconds",
+            "Request processing latency in seconds",
+        )
+        .buckets(vec![
+            0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0,
+        ]),
+    )
     .unwrap()
 });
 
 /// Attack counter by type
 static WAF_ATTACKS_TOTAL: once_cell::sync::Lazy<Counter> = once_cell::sync::Lazy::new(|| {
-    Counter::with_opts(Opts::new("waf_attacks_total", "Total attacks detected by type"))
-        .unwrap()
+    Counter::with_opts(Opts::new(
+        "waf_attacks_total",
+        "Total attacks detected by type",
+    ))
+    .unwrap()
 });
 
 /// Current active connections gauge
 static WAF_ACTIVE_CONNECTIONS: once_cell::sync::Lazy<Gauge> = once_cell::sync::Lazy::new(|| {
-    Gauge::with_opts(Opts::new("waf_active_connections", "Current active connections"))
-        .unwrap()
+    Gauge::with_opts(Opts::new(
+        "waf_active_connections",
+        "Current active connections",
+    ))
+    .unwrap()
 });
 
 /// Rate limit exceeded counter
 static WAF_RATE_LIMIT_EXCEEDED: once_cell::sync::Lazy<Counter> = once_cell::sync::Lazy::new(|| {
-    Counter::with_opts(Opts::new("waf_rate_limit_exceeded_total", "Total rate limit exceeded events"))
-        .unwrap()
+    Counter::with_opts(Opts::new(
+        "waf_rate_limit_exceeded_total",
+        "Total rate limit exceeded events",
+    ))
+    .unwrap()
 });
 
 /// Bot detected counter
 static WAF_BOTS_DETECTED: once_cell::sync::Lazy<Counter> = once_cell::sync::Lazy::new(|| {
-    Counter::with_opts(Opts::new("waf_bots_detected_total", "Total bots detected"))
-        .unwrap()
+    Counter::with_opts(Opts::new("waf_bots_detected_total", "Total bots detected")).unwrap()
 });
 
 /// Get or create registry

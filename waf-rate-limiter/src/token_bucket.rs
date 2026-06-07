@@ -145,8 +145,6 @@ impl TokenBucket {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;

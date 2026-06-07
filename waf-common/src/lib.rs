@@ -2,14 +2,14 @@
 //!
 //! Shared types and structures used across all WAF components.
 
-pub mod types;
 pub mod config;
 pub mod error;
-pub mod threat_feeds;
 pub mod statistical;
+pub mod threat_feeds;
+pub mod types;
 
-pub use types::*;
 pub use config::*;
 pub use error::*;
-pub use threat_feeds::*;
 pub use statistical::*;
+pub use threat_feeds::*;
+pub use types::*;

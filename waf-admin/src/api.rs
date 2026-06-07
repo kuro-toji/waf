@@ -30,8 +30,8 @@ use axum::{
     routing::get,
     Router,
 };
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::{AppState, Stats};
 
@@ -59,9 +59,7 @@ pub struct PaginationParams {
 }
 
 /// List all rules
-pub async fn list_rules(
-    State(state): State<AppState>,
-) -> Json<Vec<waf_common::Rule>> {
+pub async fn list_rules(State(state): State<AppState>) -> Json<Vec<waf_common::Rule>> {
     let rules = state.rules.read().unwrap();
     Json(rules.clone())
 }
@@ -72,7 +70,8 @@ pub async fn get_rule(
     Path(id): Path<String>,
 ) -> Result<Json<waf_common::Rule>, StatusCode> {
     let rules = state.rules.read().unwrap();
-    rules.iter()
+    rules
+        .iter()
         .find(|r| r.id == id)
         .cloned()
         .map(Json)
@@ -105,10 +104,7 @@ pub async fn update_rule(
 }
 
 /// Delete a rule
-pub async fn delete_rule(
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> StatusCode {
+pub async fn delete_rule(State(state): State<AppState>, Path(id): Path<String>) -> StatusCode {
     let mut rules = state.rules.write().unwrap();
     let len_before = rules.len();
     rules.retain(|r| r.id != id);
@@ -120,9 +116,7 @@ pub async fn delete_rule(
 }
 
 /// Get overall statistics
-pub async fn get_stats(
-    State(state): State<AppState>,
-) -> Json<StatsResponse> {
+pub async fn get_stats(State(state): State<AppState>) -> Json<StatsResponse> {
     let stats = state.stats.lock().unwrap();
     let total = stats.total_requests;
     let blocked = stats.blocked_requests;
@@ -141,19 +135,15 @@ pub async fn get_stats(
 }
 
 /// Get attack statistics by type
-pub async fn get_attack_stats(
-    State(state): State<AppState>,
-) -> Json<HashMap<String, u64>> {
+pub async fn get_attack_stats(State(state): State<AppState>) -> Json<HashMap<String, u64>> {
     let stats = state.stats.lock().unwrap();
     Json(stats.attacks_by_type.clone())
 }
 
 /// Get traffic statistics
-pub async fn get_traffic_stats(
-    State(state): State<AppState>,
-) -> Json<serde_json::Value> {
+pub async fn get_traffic_stats(State(state): State<AppState>) -> Json<serde_json::Value> {
     let stats = state.stats.lock().unwrap();
-    
+
     Json(serde_json::json!({
         "requests_per_minute": 100, // Placeholder
         "bytes_transferred": 1024000, // Placeholder
@@ -168,25 +158,25 @@ pub async fn get_logs(
 ) -> Json<Vec<serde_json::Value>> {
     let offset = params.offset.unwrap_or(0);
     let limit = params.limit.unwrap_or(100);
-    
+
     // Placeholder logs
     let logs: Vec<serde_json::Value> = (0..10)
-        .map(|i| serde_json::json!({
-            "id": format!("log-{}", i),
-            "timestamp": chrono::Utc::now().to_rfc3339(),
-            "client_ip": "192.168.1.1",
-            "attack_type": "sqli",
-            "severity": "high"
-        }))
+        .map(|i| {
+            serde_json::json!({
+                "id": format!("log-{}", i),
+                "timestamp": chrono::Utc::now().to_rfc3339(),
+                "client_ip": "192.168.1.1",
+                "attack_type": "sqli",
+                "severity": "high"
+            })
+        })
         .collect();
 
     Json(logs.into_iter().skip(offset).take(limit).collect())
 }
 
 /// Get configuration
-pub async fn get_config(
-    State(state): State<AppState>,
-) -> Json<waf_common::WafConfig> {
+pub async fn get_config(State(state): State<AppState>) -> Json<waf_common::WafConfig> {
     let config = state.config.read().unwrap();
     Json(config.clone())
 }

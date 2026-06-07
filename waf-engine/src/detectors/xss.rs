@@ -54,7 +54,7 @@ pub struct XssResult {
 }
 
 /// XSS attack context
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum XssContext {
     /// HTML context (inside tags)
     Html,
@@ -119,7 +119,8 @@ impl XssDetector {
             ),
             // Specific high-risk event handlers
             (
-                Regex::new(r"(?i)\bon(error|load|click|mouse\w+|key\w+|focus|blur|submit)\s*=").unwrap(),
+                Regex::new(r"(?i)\bon(error|load|click|mouse\w+|key\w+|focus|blur|submit)\s*=")
+                    .unwrap(),
                 "high_risk_event",
                 0.9,
             ),
@@ -149,9 +150,9 @@ impl XssDetector {
                 Regex::new(r#"(?i)href\s*=\s*['"]?\s*javascript\s*:"#).unwrap(),
                 "xss_href_js",
                 0.9,
-                ),
-                // src=javascript:
-                (
+            ),
+            // src=javascript:
+            (
                 Regex::new(r#"(?i)src\s*=\s*['"]?\s*javascript\s*:"#).unwrap(),
                 "src_js",
                 0.95,
@@ -169,16 +170,8 @@ impl XssDetector {
                 0.8,
             ),
             // SVG/XML based XSS
-            (
-                Regex::new(r"(?i)<svg[^>]*>").unwrap(),
-                "svg_tag",
-                0.75,
-            ),
-            (
-                Regex::new(r"(?i)<xml[^>]*>").unwrap(),
-                "xml_tag",
-                0.6,
-            ),
+            (Regex::new(r"(?i)<svg[^>]*>").unwrap(), "svg_tag", 0.75),
+            (Regex::new(r"(?i)<xml[^>]*>").unwrap(), "xml_tag", 0.6),
         ];
 
         Self {
@@ -320,7 +313,7 @@ mod tests {
     #[test]
     fn test_script_tag_detection() {
         let detector = XssDetector::new();
-        
+
         let result = detector.detect("<script>alert('xss')</script>");
         assert!(result.detected);
         assert_eq!(result.pattern, "script_tag");
@@ -330,7 +323,7 @@ mod tests {
     #[test]
     fn test_event_handler_detection() {
         let detector = XssDetector::new();
-        
+
         let result = detector.detect("<img onerror=alert(1)>");
         assert!(result.detected);
         assert_eq!(result.pattern, "high_risk_event");
@@ -339,7 +332,7 @@ mod tests {
     #[test]
     fn test_javascript_uri_detection() {
         let detector = XssDetector::new();
-        
+
         let result = detector.detect("javascript:alert('xss')");
         assert!(result.detected);
         assert_eq!(result.pattern, "javascript_uri");
@@ -348,7 +341,7 @@ mod tests {
     #[test]
     fn test_href_js_detection() {
         let detector = XssDetector::new();
-        
+
         let result = detector.detect("href='javascript:alert(1)'");
         assert!(result.detected);
         assert_eq!(result.pattern, "href_js");
@@ -357,7 +350,7 @@ mod tests {
     #[test]
     fn test_encoded_xss_detection() {
         let detector = XssDetector::new();
-        
+
         let result = detector.detect("&#60;script&#62;alert(1)&#60;/script&#62;");
         assert!(result.detected);
         assert_eq!(result.pattern, "encoded_xss");
@@ -366,7 +359,7 @@ mod tests {
     #[test]
     fn test_normal_input() {
         let detector = XssDetector::new();
-        
+
         let result = detector.detect("Hello, this is normal text!");
         assert!(!result.detected);
     }
@@ -374,7 +367,7 @@ mod tests {
     #[test]
     fn test_reflected_xss() {
         let detector = XssDetector::new();
-        
+
         let url = "/search?q=<script>alert(1)</script>";
         let param_value = "<script>alert(1)</script>";
         assert!(detector.check_reflected(url, param_value));

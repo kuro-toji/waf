@@ -236,7 +236,7 @@ impl ChallengeGenerator {
     /// Generate a new challenge for a client
     pub async fn generate_challenge(&self, client_ip: &str) -> String {
         let challenge_id = uuid::Uuid::new_v4().to_string();
-        
+
         let token = ChallengeToken::new(
             challenge_id.clone(),
             client_ip.to_string(),
@@ -245,7 +245,10 @@ impl ChallengeGenerator {
             self.challenge_timeout_secs,
         );
 
-        self.challenges.write().await.insert(client_ip.to_string(), token);
+        self.challenges
+            .write()
+            .await
+            .insert(client_ip.to_string(), token);
         challenge_id
     }
 
@@ -253,7 +256,8 @@ impl ChallengeGenerator {
     pub fn generate_challenge_page(&self, challenge_id: &str) -> String {
         let pow_difficulty = self.pow_difficulty;
 
-        format!(r#"<!DOCTYPE html>
+        format!(
+            r#"<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -451,7 +455,8 @@ impl ChallengeGenerator {
     }}
     </script>
 </body>
-</html>"#)
+</html>"#
+        )
     }
 
     /// Validate a challenge response
@@ -464,7 +469,7 @@ impl ChallengeGenerator {
     ) -> std::result::Result<bool, waf_common::WafError> {
         // Find the challenge for this client
         let mut challenges = self.challenges.write().await;
-        
+
         let token = challenges
             .get_mut(client_ip)
             .ok_or(WafError::ChallengeFailed("No challenge found".to_string()))?;
@@ -488,7 +493,8 @@ impl ChallengeGenerator {
         if pow_valid {
             token.mark_solved();
             // Extend token validity
-            token.expires_at = Utc::now() + chrono::Duration::seconds(self.token_timeout_secs as i64);
+            token.expires_at =
+                Utc::now() + chrono::Duration::seconds(self.token_timeout_secs as i64);
             return Ok(true);
         }
 
@@ -500,12 +506,14 @@ impl ChallengeGenerator {
         // Simple verification - check hash has required leading zeros
         let data = format!("{}:{}", challenge_id, nonce);
         let hash = Sha256::digest(data.as_bytes());
-        let hash_str = hash.iter().map(|b| format!("{:02x}", b)).collect::<String>();
-        
+        let hash_str = hash
+            .iter()
+            .map(|b| format!("{:02x}", b))
+            .collect::<String>();
+
         let required_zeros = (self.pow_difficulty + 3) / 4; // Convert bits to hex chars
         let end_idx = (required_zeros as usize).min(hash_str.len());
-        hash_str[..end_idx].chars()
-            .all(|c| c == '0')
+        hash_str[..end_idx].chars().all(|c| c == '0')
     }
 
     /// Check if a client has a valid token
@@ -587,10 +595,10 @@ mod tests {
     async fn test_token_validation() {
         let generator = ChallengeGenerator::new();
         let client_ip = "192.168.1.100";
-        
+
         // Generate challenge
         let challenge_id = generator.generate_challenge(client_ip).await;
-        
+
         // Verify proof-of-work (we need to compute correct nonce)
         let valid = generator.verify_pow(&challenge_id, 0);
         // First nonce won't be valid, but this tests the function
@@ -601,7 +609,7 @@ mod tests {
     async fn test_cleanup_expired() {
         let generator = ChallengeGenerator::new();
         generator.generate_challenge("192.168.1.1").await;
-        
+
         // Cleanup should remove expired challenges (none should be expired yet)
         let cleaned = generator.cleanup_expired().await;
         assert_eq!(cleaned, 0);

@@ -233,7 +233,7 @@ impl Default for ScoringConfig {
         Self {
             enabled: false, // Disabled by default for backward compatibility
             sensitivity: Sensitivity::Medium,
-            severity_weights: HashMap::new(), // Use defaults
+            severity_weights: HashMap::new(),   // Use defaults
             attack_multipliers: HashMap::new(), // No multipliers by default
             max_score: 100,
             score_exempt_rules: Vec::new(),
@@ -363,9 +363,11 @@ impl AttackScore {
             let base_score = config.severity_weight(rule.severity);
 
             // Find attack type from tags
-            let attack_type = rule.tags.iter().find(|t| {
-                config.attack_multipliers.contains_key(*t)
-            }).cloned();
+            let attack_type = rule
+                .tags
+                .iter()
+                .find(|t| config.attack_multipliers.contains_key(*t))
+                .cloned();
 
             // Apply attack type multiplier
             let multiplier = attack_type
@@ -773,11 +775,7 @@ pub struct EvaluationResult {
 
 impl EvaluationResult {
     /// Create an allowed result
-    pub fn allowed(
-        request_id: String,
-        matched_rules: Vec<Rule>,
-        processing_time_ms: u64,
-    ) -> Self {
+    pub fn allowed(request_id: String, matched_rules: Vec<Rule>, processing_time_ms: u64) -> Self {
         let highest_severity = matched_rules.iter().map(|r| r.severity).max();
         Self {
             request_id,

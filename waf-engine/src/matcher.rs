@@ -31,12 +31,12 @@
 //! }
 //! ```
 
-use waf_common::*;
 use crate::scoring::*;
 use parking_lot::RwLock;
-use std::sync::Arc;
 use regex::Regex;
 use std::collections::HashMap;
+use std::sync::Arc;
+use waf_common::*;
 
 /// Rule matcher for evaluating requests against rules
 pub struct RuleMatcher {
@@ -72,7 +72,11 @@ impl RuleMatcher {
     }
 
     /// Create a new rule matcher with scoring enabled
-    pub fn with_scoring(rules: Vec<Rule>, severity_threshold: Severity, scoring_config: ScoringConfig) -> Self {
+    pub fn with_scoring(
+        rules: Vec<Rule>,
+        severity_threshold: Severity,
+        scoring_config: ScoringConfig,
+    ) -> Self {
         let scoring_engine = if scoring_config.enabled {
             Some(ScoringEngine::new(scoring_config))
         } else {
@@ -99,7 +103,10 @@ impl RuleMatcher {
 
     /// Check if scoring is enabled
     pub fn is_scoring_enabled(&self) -> bool {
-        self.scoring_engine.as_ref().map(|e| e.is_enabled()).unwrap_or(false)
+        self.scoring_engine
+            .as_ref()
+            .map(|e| e.is_enabled())
+            .unwrap_or(false)
     }
 
     /// Compile rules into internal representation
@@ -120,7 +127,11 @@ impl RuleMatcher {
                                 regexes.insert(condition.value.clone(), re);
                             }
                             Err(e) => {
-                                tracing::warn!("Failed to compile regex for rule {}: {}", rule.id, e);
+                                tracing::warn!(
+                                    "Failed to compile regex for rule {}: {}",
+                                    rule.id,
+                                    e
+                                );
                             }
                         }
                     }
@@ -202,7 +213,8 @@ impl RuleMatcher {
             }
 
             // Check IP whitelist
-            if !rule.whitelist_ips.is_empty() && is_whitelisted(&ctx.client_ip, &rule.whitelist_ips) {
+            if !rule.whitelist_ips.is_empty() && is_whitelisted(&ctx.client_ip, &rule.whitelist_ips)
+            {
                 continue;
             }
 
@@ -262,7 +274,7 @@ impl RuleMatcher {
         _compiled_regexes: &HashMap<String, Regex>,
     ) -> bool {
         let value = self.get_field_value(&condition.field, ctx);
-        
+
         if value.is_none() {
             return false;
         }
@@ -277,7 +289,7 @@ impl RuleMatcher {
                 } else {
                     condition.value.clone()
                 };
-                
+
                 if let Ok(re) = Regex::new(&pattern) {
                     re.is_match(&value)
                 } else {
@@ -293,36 +305,42 @@ impl RuleMatcher {
             }
             MatchType::Contains => {
                 if condition.case_insensitive {
-                    value.to_lowercase().contains(&condition.value.to_lowercase())
+                    value
+                        .to_lowercase()
+                        .contains(&condition.value.to_lowercase())
                 } else {
                     value.contains(&condition.value)
                 }
             }
             MatchType::StartsWith => {
                 if condition.case_insensitive {
-                    value.to_lowercase().starts_with(&condition.value.to_lowercase())
+                    value
+                        .to_lowercase()
+                        .starts_with(&condition.value.to_lowercase())
                 } else {
                     value.starts_with(&condition.value)
                 }
             }
             MatchType::EndsWith => {
                 if condition.case_insensitive {
-                    value.to_lowercase().ends_with(&condition.value.to_lowercase())
+                    value
+                        .to_lowercase()
+                        .ends_with(&condition.value.to_lowercase())
                 } else {
                     value.ends_with(&condition.value)
                 }
             }
             MatchType::Glob => {
                 // Simple glob matching
-                let glob_to_regex = condition.value
-                    .replace("*", ".*")
-                    .replace("?", ".");
+                let glob_to_regex = condition.value.replace("*", ".*").replace("?", ".");
                 let pattern = if condition.case_insensitive {
                     format!("(?i)^{}$", glob_to_regex)
                 } else {
                     format!("^{}$", glob_to_regex)
                 };
-                Regex::new(&pattern).map(|re| re.is_match(&value)).unwrap_or(false)
+                Regex::new(&pattern)
+                    .map(|re| re.is_match(&value))
+                    .unwrap_or(false)
             }
             MatchType::IpRange => {
                 // Simplified IP range check
@@ -342,35 +360,30 @@ impl RuleMatcher {
             MatchField::UserAgent => ctx.get_header("user-agent"),
             MatchField::Referer => ctx.get_header("referer"),
             MatchField::Header(name) => ctx.get_header(name),
-            MatchField::Cookie(name) => {
-                ctx.get_header("cookie")
-                    .and_then(|c| extract_cookie(c, name))
-            }
+            MatchField::Cookie(name) => ctx
+                .get_header("cookie")
+                .and_then(|c| extract_cookie(c, name)),
             MatchField::JsonBody(key) => {
-                ctx.get_body_str()
-                    .and_then(|b| extract_json_value(b, key))
+                ctx.get_body_str().and_then(|b| extract_json_value(b, key))
             }
-            MatchField::FormData(field) => {
-                ctx.get_body_str()
-                    .and_then(|b| extract_form_value(b, field))
-            }
+            MatchField::FormData(field) => ctx
+                .get_body_str()
+                .and_then(|b| extract_form_value(b, field)),
         }
     }
 }
 
 /// Extract a specific cookie value by name
 fn extract_cookie<'a>(cookie_header: &'a str, name: &str) -> Option<&'a str> {
-    cookie_header
-        .split(';')
-        .find_map(|pair| {
-            let mut parts = pair.trim().splitn(2, '=');
-            if let Some(cookie_name) = parts.next() {
-                if cookie_name.trim() == name {
-                    return parts.next().map(|v| v.trim());
-                }
+    cookie_header.split(';').find_map(|pair| {
+        let mut parts = pair.trim().splitn(2, '=');
+        if let Some(cookie_name) = parts.next() {
+            if cookie_name.trim() == name {
+                return parts.next().map(|v| v.trim());
             }
-            None
-        })
+        }
+        None
+    })
 }
 
 /// Extract a value from JSON body
@@ -384,7 +397,7 @@ fn extract_json_value<'a>(body: &'a str, key: &str) -> Option<&'a str> {
             if let Some(end) = after_colon.find(',').or_else(|| after_colon.find('}')) {
                 let value = after_colon[..end].trim();
                 if value.starts_with('"') && value.ends_with('"') {
-                    return Some(&value[1..value.len()-1]);
+                    return Some(&value[1..value.len() - 1]);
                 }
                 return Some(value);
             }
@@ -409,7 +422,7 @@ fn extract_form_value<'a>(body: &'a str, field: &str) -> Option<&'a str> {
 fn urlencoding_decode(s: &str) -> String {
     let mut result = String::with_capacity(s.len());
     let mut chars = s.chars().peekable();
-    
+
     while let Some(c) = chars.next() {
         if c == '%' {
             if let (Some(a), Some(b)) = (chars.next(), chars.next()) {
@@ -469,7 +482,7 @@ mod tests {
         });
 
         let matcher = RuleMatcher::new(vec![rule], Severity::Low);
-        
+
         let mut ctx = create_test_context();
         ctx.uri = "/admin".to_string();
         let result = matcher.evaluate(&ctx);
@@ -499,7 +512,7 @@ mod tests {
         });
 
         let matcher = RuleMatcher::new(vec![rule], Severity::Low);
-        
+
         let mut ctx = create_test_context();
         ctx.query_string = "id=1 UNION SELECT * FROM users".to_string();
         let result = matcher.evaluate(&ctx);
@@ -529,7 +542,7 @@ mod tests {
         });
 
         let matcher = RuleMatcher::new(vec![rule], Severity::High);
-        
+
         let mut ctx = create_test_context();
         ctx.uri = "/test".to_string();
         let result = matcher.evaluate(&ctx);

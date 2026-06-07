@@ -29,11 +29,11 @@
 //! Keys are prefixed with `waf:ratelimit:` to avoid collisions.
 //! Key format: `waf:ratelimit:{ip}:{endpoint}` for per-IP-per-endpoint.
 
+use crate::TokenBucketState;
 use redis::{AsyncCommands, Client};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use waf_common::*;
-use crate::TokenBucketState;
 
 const RATE_LIMIT_PREFIX: &str = "waf:ratelimit:";
 
@@ -48,16 +48,18 @@ impl RedisRateLimiter {
     pub async fn new(redis_url: &str) -> Result<Self> {
         let client = Client::open(redis_url)
             .map_err(|e| WafError::Redis(format!("Failed to connect: {}", e)))?;
-        
+
         // Test connection
-        let mut conn = client.get_multiplexed_async_connection().await
+        let mut conn = client
+            .get_multiplexed_async_connection()
+            .await
             .map_err(|e| WafError::Redis(format!("Failed to get connection: {}", e)))?;
-        
+
         redis::cmd("PING")
             .query_async::<_, String>(&mut conn)
             .await
             .map_err(|e| WafError::Redis(format!("Failed to ping: {}", e)))?;
-        
+
         Ok(Self {
             client,
             local_buckets: RwLock::new(std::collections::HashMap::new()),
@@ -73,10 +75,10 @@ impl RedisRateLimiter {
     ) -> Result<RateLimitInfo> {
         let mut conn = self.client.get_multiplexed_async_connection().await?;
         let redis_key = format!("{}{}", RATE_LIMIT_PREFIX, key);
-        
+
         let now = chrono::Utc::now().timestamp();
         let window_start = now - window_seconds as i64;
-        
+
         // Lua script for atomic sliding window
         let script = r#"
             local key = KEYS[1]
@@ -100,7 +102,7 @@ impl RedisRateLimiter {
                 return {0, 0, window}
             end
         "#;
-        
+
         let result: Vec<i64> = redis::Script::new(script)
             .key(&redis_key)
             .arg(now)
@@ -110,10 +112,10 @@ impl RedisRateLimiter {
             .invoke_async(&mut conn)
             .await
             .map_err(|e| WafError::Redis(format!("Script error: {}", e)))?;
-        
+
         let allowed = result[0] == 1;
         let remaining = result[1] as u64;
-        
+
         Ok(RateLimitInfo {
             request_count: limit - remaining,
             limit,
@@ -133,9 +135,9 @@ impl RedisRateLimiter {
     ) -> Result<RateLimitInfo> {
         let mut conn = self.client.get_multiplexed_async_connection().await?;
         let redis_key = format!("{}{}", RATE_LIMIT_PREFIX, key);
-        
+
         let now = chrono::Utc::now().timestamp_millis() as f64;
-        
+
         // Lua script for atomic token bucket
         let script = r#"
             local key = KEYS[1]
@@ -168,7 +170,7 @@ impl RedisRateLimiter {
                 return {0, tokens, capacity}
             end
         "#;
-        
+
         let result: Vec<f64> = redis::Script::new(script)
             .key(&redis_key)
             .arg(now)
@@ -177,19 +179,18 @@ impl RedisRateLimiter {
             .invoke_async(&mut conn)
             .await
             .map_err(|e| WafError::Redis(format!("Script error: {}", e)))?;
-        
+
         let allowed = result[0] == 1.0;
         let tokens = result[1];
-        
+
         Ok(RateLimitInfo {
             request_count: (capacity as f64 - tokens) as u64,
             limit: capacity,
             window_seconds: 1,
             remaining: tokens as u64,
             exceeded: !allowed,
-            reset_at: chrono::Utc::now() + chrono::Duration::milliseconds(
-                ((1.0 - tokens) / refill_rate * 1000.0) as i64
-            ),
+            reset_at: chrono::Utc::now()
+                + chrono::Duration::milliseconds(((1.0 - tokens) / refill_rate * 1000.0) as i64),
         })
     }
 
@@ -197,10 +198,11 @@ impl RedisRateLimiter {
     pub async fn reset(&self, key: &str) -> Result<()> {
         let mut conn = self.client.get_multiplexed_async_connection().await?;
         let redis_key = format!("{}{}", RATE_LIMIT_PREFIX, key);
-        
-        conn.del::<_, ()>(&redis_key).await
+
+        conn.del::<_, ()>(&redis_key)
+            .await
             .map_err(|e| WafError::Redis(format!("Failed to delete: {}", e)))?;
-        
+
         Ok(())
     }
 }

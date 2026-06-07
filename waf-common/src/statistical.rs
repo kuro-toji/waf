@@ -124,8 +124,9 @@ impl Distribution {
         if self.values.is_empty() {
             return 0.0;
         }
-        
-        self.values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+
+        self.values
+            .sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
         let idx = ((pct / 100.0) * (self.values.len() - 1) as f64).round() as usize;
         self.values[idx.min(self.values.len() - 1)]
     }
@@ -205,13 +206,15 @@ impl ZScoreDetector {
 
         let n = self.values.len() as f64;
         self.mean = self.values.iter().sum::<f64>() / n;
-        
+
         let variance = if self.values.len() < 2 {
             0.0
         } else {
-            self.values.iter()
+            self.values
+                .iter()
                 .map(|v| (v - self.mean).powi(2))
-                .sum::<f64>() / n
+                .sum::<f64>()
+                / n
         };
         self.std_dev = variance.sqrt();
     }
@@ -543,7 +546,7 @@ impl AnomalyDetectorManager {
     pub fn add_sample(&mut self, metric_type: MetricType, value: f64) {
         let detector = self.get_or_create(metric_type);
         detector.add_sample(value);
-        
+
         // Update global score with max
         let score = detector.calculate_score(value);
         if score > self.global_score {
@@ -574,14 +577,17 @@ impl AnomalyDetectorManager {
         self.detectors
             .iter()
             .map(|(k, v)| {
-                (*k, AnomalyStats {
-                    metric_type: *k,
-                    count: v.distribution.count,
-                    mean: v.distribution.mean(),
-                    std_dev: v.distribution.std_dev(),
-                    min: v.distribution.min,
-                    max: v.distribution.max,
-                })
+                (
+                    *k,
+                    AnomalyStats {
+                        metric_type: *k,
+                        count: v.distribution.count,
+                        mean: v.distribution.mean(),
+                        std_dev: v.distribution.std_dev(),
+                        min: v.distribution.min,
+                        max: v.distribution.max,
+                    },
+                )
             })
             .collect()
     }
@@ -645,12 +651,12 @@ mod tests {
     #[test]
     fn test_zscore_anomaly() {
         let mut detector = ZScoreDetector::new(100);
-        
+
         // Add normal values
         for _ in 0..50 {
             detector.add_sample_internal(10.0);
         }
-        
+
         // Normal value should have low z-score
         let score = detector.anomaly_score(10.5);
         assert!(score < 0.5);
@@ -659,12 +665,12 @@ mod tests {
     #[test]
     fn test_iqr_outlier() {
         let mut detector = IqrDetector::new(100);
-        
+
         // Add values with clear IQR
         for i in 1..=50 {
             detector.add_sample(i as f64);
         }
-        
+
         // Extreme value should be outlier
         assert!(detector.is_outlier(100.0));
         assert!(!detector.is_outlier(25.0));
@@ -673,15 +679,15 @@ mod tests {
     #[test]
     fn test_ewma_detection() {
         let mut detector = EwmaDetector::new(0.3);
-        
+
         // Add baseline values
         for _ in 0..20 {
             detector.add_sample(10.0);
         }
-        
+
         // Small variation should be normal
         assert!(!detector.is_anomaly(10.5));
-        
+
         // Large spike should be anomaly
         assert!(detector.is_anomaly(50.0));
     }
@@ -689,16 +695,16 @@ mod tests {
     #[test]
     fn test_combined_anomaly_detector() {
         let mut detector = AnomalyDetector::new(MetricType::RequestRate);
-        
+
         // Add normal values
         for _ in 0..50 {
             detector.add_sample(10.0);
         }
-        
+
         // Normal value
         let score = detector.calculate_score(10.5);
         assert!(score < 0.5);
-        
+
         // Anomalous value
         let score = detector.calculate_score(100.0);
         assert!(score > 0.5);
@@ -707,16 +713,16 @@ mod tests {
     #[test]
     fn test_anomaly_manager() {
         let mut manager = AnomalyDetectorManager::new();
-        
+
         // Add samples to multiple metrics
         for i in 0..30 {
             manager.add_sample(MetricType::RequestRate, 10.0 + (i as f64 * 0.1));
             manager.add_sample(MetricType::ResponseTime, 50.0);
         }
-        
+
         // Global score should be computed
         let _global = manager.get_global_score();
-        
+
         // Get stats for each metric
         let stats = manager.get_stats();
         assert!(stats.contains_key(&MetricType::RequestRate));
@@ -726,19 +732,19 @@ mod tests {
     #[test]
     fn test_ewma_volatility() {
         let mut detector = EwmaDetector::new(0.3);
-        
+
         for _ in 0..20 {
             detector.add_sample(10.0);
         }
-        
+
         assert_eq!(detector.get_ewma(), 10.0);
         assert_eq!(detector.get_volatility(), 0.0);
-        
+
         // Add varying values
         for i in 0..10 {
             detector.add_sample(10.0 + (i as f64 * 5.0));
         }
-        
+
         // Volatility should be non-zero now
         assert!(detector.get_volatility() > 0.0);
     }

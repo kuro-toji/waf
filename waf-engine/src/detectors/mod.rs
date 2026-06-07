@@ -30,22 +30,22 @@
 //! }
 //! ```
 
+pub mod command_injection;
+pub mod csrf;
+pub mod ldap_injection;
+pub mod lfi;
+pub mod path_traversal;
+pub mod rfi;
 pub mod sqli;
 pub mod xss;
-pub mod csrf;
-pub mod path_traversal;
-pub mod command_injection;
 pub mod xxe;
-pub mod lfi;
-pub mod rfi;
-pub mod ldap_injection;
 
+pub use command_injection::*;
+pub use csrf::*;
+pub use ldap_injection::*;
+pub use lfi::*;
+pub use path_traversal::*;
+pub use rfi::*;
 pub use sqli::*;
 pub use xss::*;
-pub use csrf::*;
-pub use path_traversal::*;
-pub use command_injection::*;
 pub use xxe::*;
-pub use lfi::*;
-pub use rfi::*;
-pub use ldap_injection::*;
