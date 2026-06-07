@@ -42,7 +42,7 @@ RUN mkdir -p src \
     echo "fn main() {}" > waf-rate-limiter/src/lib.rs && \
     echo "fn main() {}" > waf-bot-detector/src/lib.rs && \
     echo "fn main() {}" > waf-core/src/main.rs && \
-    echo "fn main() {}" > waf-admin/src/lib.rs
+    echo "fn main() {}" > waf-admin/src/main.rs
 
 # Build dependencies only
 RUN cargo build --release --workspace && \
