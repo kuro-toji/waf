@@ -254,10 +254,7 @@ impl XssDetector {
         // (e.g. `<script>` at offset 0 is the opening tag, which is
         // Html context; the Javascript context is the code *inside*
         // the tag).
-        let match_text = input[match_start..]
-            .chars()
-            .take(16)
-            .collect::<String>();
+        let match_text = input[match_start..].chars().take(16).collect::<String>();
         let match_lower = match_text.to_lowercase();
 
         // Check what's before the match
@@ -266,7 +263,8 @@ impl XssDetector {
             XssContext::Javascript
         } else if before.contains("<style") || before.contains("style=") {
             XssContext::Css
-        } else if before.contains("<svg") || before.contains("<xml")
+        } else if before.contains("<svg")
+            || before.contains("<xml")
             || before.contains('<')
             || match_lower.starts_with("<script")
             || match_lower.starts_with("<svg")

@@ -57,10 +57,7 @@
 //! let result = detector.detect(&request_context);
 //! ```
 
-use super::{
-    ChallengeGenerator, FingerprintCollector,
-    ReputationDatabase,
-};
+use super::{ChallengeGenerator, FingerprintCollector, ReputationDatabase};
 use waf_common::*;
 
 /// Bot detection result

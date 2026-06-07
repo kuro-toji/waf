@@ -317,10 +317,12 @@ mod tests {
         let config = ScoringConfig::medium();
         let engine = ScoringEngine::new(config);
 
-        let rules = [create_test_rule(Severity::Critical, vec![]),
+        let rules = [
+            create_test_rule(Severity::Critical, vec![]),
             create_test_rule(Severity::Critical, vec![]),
             create_test_rule(Severity::High, vec![]),
-            create_test_rule(Severity::Medium, vec![])];
+            create_test_rule(Severity::Medium, vec![]),
+        ];
         let rule_refs: Vec<&Rule> = rules.iter().collect();
         let score = engine.calculate_score(&rule_refs);
 

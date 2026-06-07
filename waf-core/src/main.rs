@@ -30,9 +30,7 @@ mod upstream;
 
 use std::sync::Arc;
 use waf_bot_detector::BotDetector;
-use waf_common::{
-    create_shared_manager, SharedAnomalyManager, ThreatFeedManager, WafConfig,
-};
+use waf_common::{create_shared_manager, SharedAnomalyManager, ThreatFeedManager, WafConfig};
 use waf_engine::{RuleLoader, RuleMatcher};
 use waf_rate_limiter::RateLimiter;
 

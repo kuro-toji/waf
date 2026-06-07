@@ -42,8 +42,7 @@ pub struct IpReputation {
     pub attack_count: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum ReputationCategory {
     #[default]
     Clean,
@@ -54,7 +53,6 @@ pub enum ReputationCategory {
     Proxy,
     Bot,
 }
-
 
 /// IP reputation database
 pub struct ReputationDatabase {
