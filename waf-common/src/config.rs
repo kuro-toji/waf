@@ -28,29 +28,34 @@
 //!
 //! ## Loading Configuration
 //!
-//! ```rust
+//! ```ignore
 //! use waf_common::WafConfig;
 //!
 //! let config = WafConfig::load_from_file("config/waf.yaml")?;
 //! ```
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// Root WAF configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WafConfig {
     /// General WAF settings
+    #[serde(default)]
     pub waf: WafSettings,
     /// Proxy configuration
+    #[serde(default)]
     pub proxy: ProxyConfig,
     /// Rate limiter configuration
+    #[serde(default)]
     pub rate_limiter: RateLimiterConfig,
     /// Bot detector configuration
+    #[serde(default)]
     pub bot_detector: BotDetectorConfig,
     /// Logging configuration
+    #[serde(default)]
     pub logging: LoggingConfig,
     /// Metrics configuration
+    #[serde(default)]
     pub metrics: MetricsConfig,
 }
 
@@ -79,6 +84,21 @@ pub struct WafSettings {
     /// Minimum severity to block
     #[serde(default)]
     pub min_severity_to_block: String,
+}
+
+impl Default for WafSettings {
+    fn default() -> Self {
+        Self {
+            server_name: default_server_name(),
+            listen_addr: String::new(),
+            upstream_addr: String::new(),
+            max_body_size: default_max_body_size(),
+            timeout_seconds: default_timeout(),
+            verbose: false,
+            trusted_proxies: Vec::new(),
+            min_severity_to_block: "medium".to_string(),
+        }
+    }
 }
 
 fn default_server_name() -> String {
@@ -114,6 +134,19 @@ pub struct ProxyConfig {
     pub health_check_interval: u64,
 }
 
+impl Default for ProxyConfig {
+    fn default() -> Self {
+        Self {
+            tls_enabled: false,
+            tls_cert_path: None,
+            tls_key_path: None,
+            keep_alive_timeout: default_keep_alive(),
+            max_connections: default_max_connections(),
+            health_check_interval: default_health_check(),
+        }
+    }
+}
+
 fn default_keep_alive() -> u64 {
     65
 }
@@ -143,6 +176,18 @@ pub struct RateLimiterConfig {
     /// Rate limit rules
     #[serde(default)]
     pub rules: Vec<RateLimitRule>,
+}
+
+impl Default for RateLimiterConfig {
+    fn default() -> Self {
+        Self {
+            enabled: default_ratelimit_enabled(),
+            default_limit: default_rate_limit(),
+            default_window_seconds: default_window(),
+            redis_url: None,
+            rules: Vec::new(),
+        }
+    }
 }
 
 fn default_ratelimit_enabled() -> bool {
@@ -204,6 +249,21 @@ pub struct BotDetectorConfig {
     pub block_vpn: bool,
 }
 
+impl Default for BotDetectorConfig {
+    fn default() -> Self {
+        Self {
+            enabled: default_botdetector_enabled(),
+            js_challenge: default_js_challenge(),
+            captcha_challenge: false,
+            challenge_timeout: default_challenge_timeout(),
+            ip_reputation_check: default_botdetector_enabled(),
+            allow_search_bots: default_allow_bots(),
+            block_tor: default_block_tor(),
+            block_vpn: false,
+        }
+    }
+}
+
 fn default_js_challenge() -> bool {
     true
 }
@@ -243,6 +303,18 @@ pub struct LoggingConfig {
     pub include_body: bool,
 }
 
+impl Default for LoggingConfig {
+    fn default() -> Self {
+        Self {
+            level: default_log_level(),
+            format: default_log_format(),
+            log_file: None,
+            include_headers: false,
+            include_body: false,
+        }
+    }
+}
+
 fn default_log_level() -> String {
     "info".to_string()
 }
@@ -265,6 +337,17 @@ pub struct MetricsConfig {
     /// Push interval in seconds
     #[serde(default = "default_push_interval")]
     pub push_interval: u64,
+}
+
+impl Default for MetricsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: default_metrics_enabled(),
+            path: default_metrics_path(),
+            pushgateway_url: None,
+            push_interval: default_push_interval(),
+        }
+    }
 }
 
 fn default_metrics_enabled() -> bool {
