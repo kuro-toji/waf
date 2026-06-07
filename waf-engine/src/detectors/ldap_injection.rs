@@ -44,7 +44,6 @@
 //! ```
 
 use regex::Regex;
-use waf_common::*;
 
 /// LDAP injection detection result
 #[derive(Debug, Clone)]

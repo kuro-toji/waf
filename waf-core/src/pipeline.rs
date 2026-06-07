@@ -24,9 +24,8 @@
 //! - Upstream error: Return 502 Bad Gateway
 
 use axum::{body::Body, extract::Request, response::Response};
-use http::{HeaderMap, StatusCode};
-use std::sync::Arc;
-use std::time::{Duration, Instant};
+use http::StatusCode;
+use std::time::Instant;
 
 use crate::AppState;
 use waf_common::*;
@@ -201,7 +200,7 @@ pub async fn process_request(
 }
 
 /// Extract client IP from request
-fn extract_client_ip_from_request(request: &Request<Body>, trusted_proxies: &[String]) -> String {
+fn extract_client_ip_from_request(request: &Request<Body>, _trusted_proxies: &[String]) -> String {
     let headers = request.headers();
 
     if let Some(xff) = headers.get("x-forwarded-for") {
@@ -292,7 +291,7 @@ fn create_block_response(status: StatusCode, body: &str) -> Response<Body> {
 /// Forward request to upstream server
 async fn forward_to_upstream(
     state: &AppState,
-    mut request: Request<Body>,
+    request: Request<Body>,
     _ctx: &RequestContext,
 ) -> Result<Response<Body>> {
     let upstream_addr = &state.config.waf.upstream_addr;

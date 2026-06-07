@@ -45,7 +45,6 @@
 //! ```
 
 use regex::Regex;
-use waf_common::*;
 
 /// Command injection detection result
 #[derive(Debug, Clone)]

@@ -24,11 +24,9 @@ use axum::{
     body::Body,
     extract::State,
     http::{Request, Response, StatusCode},
-    middleware::{self, Next},
-    routing::{get, post},
+    routing::get,
     Router,
 };
-use std::sync::Arc;
 use tower_http::trace::TraceLayer;
 
 use crate::{pipeline::process_request, AppState};

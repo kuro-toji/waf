@@ -6,8 +6,8 @@
 //!
 //! - Path Traversal: Attempts to access files outside web root
 //! - LFI: Exploits application feature to include local files
-//! Both often use `../` patterns - LFI detector focuses on
-//! common web application file inclusion patterns.
+//!   Both often use `../` patterns - LFI detector focuses on
+//!   common web application file inclusion patterns.
 //!
 //! ## Detection Patterns
 //!
@@ -38,7 +38,6 @@
 //! ```
 
 use regex::Regex;
-use waf_common::*;
 
 /// LFI detection result
 #[derive(Debug, Clone)]

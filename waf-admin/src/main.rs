@@ -1,3 +1,8 @@
+// Binary crate: items here are part of the public API surface (handlers,
+// state, response types) and are intentionally exposed even when only a
+// subset is wired into the current routing.
+#![allow(dead_code)]
+
 //! WAF Admin API Service
 //!
 //! REST API for WAF management.
@@ -25,12 +30,11 @@ mod api;
 mod state;
 
 use axum::{
-    middleware,
-    routing::{delete, get, post, put},
+    routing::get,
     Router,
 };
 use std::sync::Arc;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::CorsLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Clone)]

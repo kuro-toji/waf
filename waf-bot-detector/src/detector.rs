@@ -28,6 +28,8 @@
 //!
 //! ```rust
 //! use waf_bot_detector::{BotDetector, BotDetectorConfig};
+//! use waf_common::{RequestContext, HttpMethod};
+//! use chrono::Utc;
 //!
 //! let config = BotDetectorConfig {
 //!     enabled: true,
@@ -39,11 +41,24 @@
 //! };
 //!
 //! let detector = BotDetector::new(config);
+//! let request_context = RequestContext {
+//!     id: "req-1".to_string(),
+//!     method: HttpMethod::Get,
+//!     uri: "/".to_string(),
+//!     query_string: String::new(),
+//!     headers: vec![("user-agent".to_string(), "Mozilla/5.0".to_string())],
+//!     client_ip: "127.0.0.1".to_string(),
+//!     body: None,
+//!     content_type: None,
+//!     timestamp: Utc::now(),
+//!     tls: None,
+//!     rate_limit_info: None,
+//! };
 //! let result = detector.detect(&request_context);
 //! ```
 
 use super::{
-    BotAnalysisResult, ChallengeGenerator, ClientFingerprint, FingerprintCollector,
+    ChallengeGenerator, FingerprintCollector,
     ReputationDatabase,
 };
 use waf_common::*;

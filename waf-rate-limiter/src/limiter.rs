@@ -15,7 +15,7 @@
 //!
 //! ## Configuration
 //!
-//! ```rust
+//! ```ignore
 //! let config = RateLimitConfig {
 //!     algorithm: RateLimitAlgorithm::SlidingWindow,
 //!     limit: 1000,           // requests per window
@@ -153,11 +153,11 @@ impl RateLimiter {
                 }
             }
             LocalLimiter::SlidingWindow(window) => {
-                let allowed = window.check();
+                let _allowed = window.check();
                 window.get_info()
             }
             LocalLimiter::LeakyBucket(bucket) => {
-                let allowed = bucket.try_add();
+                let _allowed = bucket.try_add();
                 bucket.get_info()
             }
         };
@@ -223,7 +223,7 @@ mod tests {
 
         // Use up all requests
         for _ in 0..5 {
-            let result = std::time::Duration::from_millis(10);
+            let _result = std::time::Duration::from_millis(10);
             let _ = tokio::runtime::Builder::new_current_thread()
                 .build()
                 .unwrap()

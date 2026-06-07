@@ -31,7 +31,6 @@
 
 use crate::TokenBucketState;
 use redis::{AsyncCommands, Client};
-use std::sync::Arc;
 use tokio::sync::RwLock;
 use waf_common::*;
 
@@ -40,6 +39,10 @@ const RATE_LIMIT_PREFIX: &str = "waf:ratelimit:";
 /// Redis-backed rate limiter
 pub struct RedisRateLimiter {
     client: Client,
+    /// Reserved for a local in-process fallback used when Redis is unreachable.
+    /// Not yet wired into the public API; kept here to anchor the planned
+    /// graceful-degradation path.
+    #[allow(dead_code)]
     local_buckets: RwLock<std::collections::HashMap<String, TokenBucketState>>,
 }
 

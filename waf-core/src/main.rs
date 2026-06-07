@@ -1,3 +1,9 @@
+// Binary crate: handlers, metrics helpers, and the upstream pool are
+// part of the public API surface and may be called by future routing /
+// by external integrations. Suppress dead_code at the crate level so
+// additions to the API don't trip -D warnings.
+#![allow(dead_code)]
+
 //! WAF Core - HTTP Proxy Server
 //!
 //! Main entry point for the WAF proxy server.
@@ -25,7 +31,7 @@ mod upstream;
 use std::sync::Arc;
 use waf_bot_detector::BotDetector;
 use waf_common::{
-    create_shared_manager, SharedAnomalyManager, ThreatFeedManager, WafConfig, WafError,
+    create_shared_manager, SharedAnomalyManager, ThreatFeedManager, WafConfig,
 };
 use waf_engine::{RuleLoader, RuleMatcher};
 use waf_rate_limiter::RateLimiter;

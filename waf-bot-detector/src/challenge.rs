@@ -124,18 +124,20 @@ impl FingerprintSignals {
         }
 
         // WebGL indicates real browser (headless often lacks WebGL)
-        if self.webgl_vendor.is_some() && self.webgl_renderer.is_some() {
-            score += 15;
-            // Check for known headless indicators
-            let renderer = self.webgl_renderer.as_ref().unwrap().to_lowercase();
-            if renderer.contains("swiftshader") || renderer.contains("llvmpipe") {
-                score -= 20; // Known software renderer
+        if self.webgl_vendor.is_some() {
+            if let Some(renderer) = self.webgl_renderer.as_ref() {
+                score += 15;
+                // Check for known headless indicators
+                let renderer = renderer.to_lowercase();
+                if renderer.contains("swiftshader") || renderer.contains("llvmpipe") {
+                    score -= 20; // Known software renderer
+                }
             }
         }
 
         // Reasonable hardware concurrency
         if let Some(hw) = self.hardware_concurrency {
-            if hw >= 2 && hw <= 64 {
+            if (2..=64).contains(&hw) {
                 score += 5;
             } else if hw > 64 {
                 score -= 10; // Likely spoofed
@@ -144,7 +146,7 @@ impl FingerprintSignals {
 
         // Reasonable device memory
         if let Some(mem) = self.device_memory {
-            if mem >= 1.0 && mem <= 32.0 {
+            if (1.0..=32.0).contains(&mem) {
                 score += 5;
             }
         }
@@ -171,7 +173,7 @@ impl FingerprintSignals {
         }
 
         // Clamp to 0-100
-        score.max(0).min(100) as u8
+        score.min(100) as u8
     }
 
     /// Check for headless browser indicators
@@ -511,7 +513,7 @@ impl ChallengeGenerator {
             .map(|b| format!("{:02x}", b))
             .collect::<String>();
 
-        let required_zeros = (self.pow_difficulty + 3) / 4; // Convert bits to hex chars
+        let required_zeros = self.pow_difficulty.div_ceil(4); // Convert bits to hex chars
         let end_idx = (required_zeros as usize).min(hash_str.len());
         hash_str[..end_idx].chars().all(|c| c == '0')
     }

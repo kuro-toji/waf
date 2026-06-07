@@ -19,10 +19,13 @@
 //! use waf_bot_detector::tls_fingerprint::{Ja3Hasher, TlsFingerprintMatcher};
 //!
 //! let hasher = Ja3Hasher::new();
-//! let ja3_hash = hasher.compute_ja3(&client_hello_bytes);
+//! let client_hello_bytes = vec![0x16, 0x03, 0x03, 0x00, 0x05, 0x01, 0x00, 0x00];
+//! let ja3_hash = hasher.compute_ja3_from_bytes(&client_hello_bytes);
 //!
 //! let matcher = TlsFingerprintMatcher::new();
-//! let bot_score = matcher.calculate_bot_score(&ja3_hash);
+//! if let Some(hash) = ja3_hash {
+//!     let bot_score = matcher.calculate_bot_score(&hash);
+//! }
 //! ```
 
 use std::collections::HashMap;
@@ -276,9 +279,9 @@ impl Ja3Hasher {
 
             // Parse extension data based on type
             match ext_type {
-                0x0A => {
+                0x0A
                     // Elliptic curves (extension 10)
-                    if pos + 2 <= extensions_end && pos + 2 + ext_len <= handshake.len() {
+                    if pos + 2 <= extensions_end && pos + 2 + ext_len <= handshake.len() => {
                         let curves_len =
                             ((handshake[pos] as usize) << 8) | (handshake[pos + 1] as usize);
                         let curves_start = pos + 2;
@@ -294,10 +297,9 @@ impl Ja3Hasher {
                             }
                         }
                     }
-                }
-                0x0B => {
+                0x0B
                     // EC point formats (extension 11)
-                    if pos + 1 <= extensions_end && pos + 1 + ext_len <= handshake.len() {
+                    if pos < extensions_end && pos + 1 + ext_len <= handshake.len() => {
                         let formats_len = handshake[pos] as usize;
                         for i in 0..formats_len {
                             if pos + 1 + i < extensions_end && pos + 1 + ext_len <= handshake.len()
@@ -306,7 +308,6 @@ impl Ja3Hasher {
                             }
                         }
                     }
-                }
                 _ => {}
             }
 

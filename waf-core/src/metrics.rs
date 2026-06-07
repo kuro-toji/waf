@@ -141,7 +141,7 @@ pub fn record_latency(seconds: f64) {
 }
 
 /// Record an attack
-pub fn record_attack(attack_type: &str) {
+pub fn record_attack(_attack_type: &str) {
     WAF_ATTACKS_TOTAL.inc();
 }
 

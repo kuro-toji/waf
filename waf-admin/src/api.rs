@@ -27,13 +27,11 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
     response::Json,
-    routing::get,
-    Router,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::{AppState, Stats};
+use crate::AppState;
 
 #[derive(Debug, Serialize)]
 pub struct RuleResponse {
@@ -142,7 +140,7 @@ pub async fn get_attack_stats(State(state): State<AppState>) -> Json<HashMap<Str
 
 /// Get traffic statistics
 pub async fn get_traffic_stats(State(state): State<AppState>) -> Json<serde_json::Value> {
-    let stats = state.stats.lock().unwrap();
+    let _stats = state.stats.lock().unwrap();
 
     Json(serde_json::json!({
         "requests_per_minute": 100, // Placeholder

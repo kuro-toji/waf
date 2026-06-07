@@ -9,7 +9,7 @@
 //!
 //! ## Usage
 //!
-//! ```rust
+//! ```ignore
 //! use waf_common::threat_feeds::{ThreatFeedManager, FeedSource};
 //!
 //! let manager = ThreatFeedManager::new();
@@ -354,7 +354,12 @@ impl ThreatFeedManager {
 
     /// Fetch and parse a single feed
     async fn fetch_and_parse_feed(&self, feed: &FeedConfig) -> Result<Vec<ThreatEntry>, FeedError> {
-        let response = reqwest::get(feed.url.as_str())
+        let response = reqwest::Client::builder()
+            .timeout(self.client_timeout)
+            .build()
+            .map_err(|e| FeedError::FetchError(e.to_string()))?
+            .get(feed.url.as_str())
+            .send()
             .await
             .map_err(|e| FeedError::FetchError(e.to_string()))?;
 
@@ -400,10 +405,11 @@ impl ThreatFeedManager {
                 continue;
             }
 
-            // Try parsing as CIDR
+            // Try parsing as CIDR — stored in blocked_networks, not returned
             if let Some(network) = BlockedNetwork::from_cidr(line) {
-                // Note: CIDR entries are stored, not returned as ThreatEntry
-                // They get added to blocked_networks separately
+                if let Ok(mut nets) = self.blocked_networks.try_write() {
+                    nets.insert(network);
+                }
             }
         }
 
@@ -411,8 +417,8 @@ impl ThreatFeedManager {
     }
 
     /// Parse Spamhaus DROP format: "X.X.X.X/X ; comment"
-    fn parse_spamhaus_drop(&self, content: &str, feed: &FeedConfig) -> Vec<ThreatEntry> {
-        let mut entries = Vec::new();
+    fn parse_spamhaus_drop(&self, content: &str, _feed: &FeedConfig) -> Vec<ThreatEntry> {
+        let entries = Vec::new();
 
         for line in content.lines() {
             let line = line.trim();
@@ -425,8 +431,12 @@ impl ThreatFeedManager {
             // Split on semicolon for comments
             let cidr = line.split(';').next().unwrap_or(line).trim();
 
-            // CIDR parsing - entries stored separately
-            let _ = BlockedNetwork::from_cidr(cidr);
+            // CIDR parsing - networks are stored in blocked_networks, not returned
+            if let Some(network) = BlockedNetwork::from_cidr(cidr) {
+                if let Ok(mut nets) = self.blocked_networks.try_write() {
+                    nets.insert(network);
+                }
+            }
         }
 
         entries

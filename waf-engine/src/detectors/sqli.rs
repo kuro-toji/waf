@@ -36,7 +36,6 @@
 //! ```
 
 use regex::Regex;
-use waf_common::*;
 
 /// SQL Injection detection result
 #[derive(Debug, Clone)]

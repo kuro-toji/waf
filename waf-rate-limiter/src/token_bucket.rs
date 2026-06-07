@@ -39,7 +39,6 @@
 //! ```
 
 use std::time::{Duration, Instant};
-use waf_common::*;
 
 /// Token bucket state
 #[derive(Debug, Clone)]

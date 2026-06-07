@@ -20,10 +20,7 @@
 //! Periodic health checks verify upstream availability.
 //! Unhealthy upstreams are temporarily removed from rotation.
 
-use parking_lot::Mutex;
 use std::collections::HashMap;
-use std::sync::Arc;
-use tokio::sync::oneshot;
 
 pub struct UpstreamPool {
     connections: HashMap<String, Vec<UpstreamConnection>>,
@@ -45,7 +42,7 @@ impl UpstreamPool {
         }
     }
 
-    pub fn get_connection(&mut self, host: &str) -> Option<()> {
+    pub fn get_connection(&mut self, _host: &str) -> Option<()> {
         // Simplified - in production, use a full connection pool
         Some(())
     }

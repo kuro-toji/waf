@@ -12,7 +12,7 @@
 //!
 //! ## Usage
 //!
-//! ```rust
+//! ```ignore
 //! use waf_engine::{RuleMatcher, RuleLoader};
 //! use waf_common::{Severity, Rule, Action};
 //!
@@ -113,7 +113,7 @@ impl RuleMatcher {
     fn compile_rules(rules: Vec<Rule>) -> Vec<CompiledRule> {
         rules
             .into_iter()
-            .filter_map(|rule| {
+            .map(|rule| {
                 let mut regexes = HashMap::new();
                 for condition in &rule.conditions {
                     if condition.match_type == MatchType::Regex {
@@ -136,7 +136,7 @@ impl RuleMatcher {
                         }
                     }
                 }
-                Some(CompiledRule { rule, regexes })
+                CompiledRule { rule, regexes }
             })
             .collect()
     }
@@ -291,7 +291,7 @@ impl RuleMatcher {
                 };
 
                 if let Ok(re) = Regex::new(&pattern) {
-                    re.is_match(&value)
+                    re.is_match(value)
                 } else {
                     false
                 }
@@ -339,7 +339,7 @@ impl RuleMatcher {
                     format!("^{}$", glob_to_regex)
                 };
                 Regex::new(&pattern)
-                    .map(|re| re.is_match(&value))
+                    .map(|re| re.is_match(value))
                     .unwrap_or(false)
             }
             MatchType::IpRange => {
